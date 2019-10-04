@@ -13,7 +13,7 @@ void print_all(const int *const arr, int elements) {
     printf("\n");
 }
 
-int main(void) {
+int main() {
     int arr[] = { 1, 2, 3 };
     print_all(arr, sizeof arr / sizeof arr[0]);
 }

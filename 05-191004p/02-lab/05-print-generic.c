@@ -14,7 +14,7 @@ void print_int(const void *x) {
     printf("%d", *(const int*)x);
 }
 
-int main(void) {
+int main() {
     int arr[] = { 1, 2, 3 };
     print_all(arr, sizeof arr / sizeof arr[0], sizeof arr[0], print_int);
 }

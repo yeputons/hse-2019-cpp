@@ -6,6 +6,8 @@ typedef struct point {
     int y;
 } point;
 
+// TODO: run 'hexdump -C 03-fwrite-demo.bin', change values, run again, experiment.
+
 int main() {
     point pts[2];
     pts[0].x = 10;

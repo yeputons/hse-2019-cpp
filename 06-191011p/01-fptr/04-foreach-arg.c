@@ -17,7 +17,8 @@ void add_sum(void *sum, void *x) {
 }
 
 // TODO: mul_prod
-// TODO: add_sum_float
+// TODO: add_sum_float: float[] --> float
+// TODO: add_sum_float_int: int[] --> float
 
 int main() {
     int arr[10];

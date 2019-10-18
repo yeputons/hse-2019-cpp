@@ -162,12 +162,22 @@
 * // Offtopic сейчас: cv-qualified methods, перегрузка операторов, `new` не инициализирует память для `int`, детали the most vexing parse. 
 * Синтаксис в Си:
   ```
-  struct int_array { int *data; size_t len; };
-  void init_int_array(int_array*, size_t);
-  size_t len_int_array(int_array*);
+  struct int_array {
+      int *data;
+      size_t len;
+  };
+  void init_int_array(int_array *arr, size_t init_len) {
+      arr->data = malloc(init_len * sizeof(int));
+      arr->len = init_len;
+  }
+  void deinit_int_array(int_array *arr) {
+      free(arr->data);
+  }
+  size_t len_int_array(int_array *arr) {
+      return arr->len;
+  }
   int get_int_array(int_array*, size_t);
   void set_int_array(int_array*, size_t, int);
-  void deinit_int_array(int_array*);
   int main() {
       int_array x;
       init_int_array(&x, 10);
@@ -184,7 +194,7 @@
       int *data;  // "Поля". Как в структурах.
       size_t len;
   public:
-      int_array(size_t init_len = 0) { // Конструктор: имя "метода" совпадает с именем класса.
+      int_array(size_t init_len) { // Конструктор: имя "метода" совпадает с именем класса.
           // В отличие от Python не надо писать self., это как бы "глобальная" переменая.
           data = new int[init_len];
           len = init_len;

@@ -91,13 +91,14 @@ struct Foo {
     int a;
     vector<int> b;
     int &c;
+    int d[10];
 };
 ```
 * "Default initialization": `new T`, `new T[10]`, `T a;`, `T a[10];`, объявили поле и не указали в member initializer list.
   * Для неклассов: не инициализируется. В частности, `new int[10]` не заполняет нулями.
   * Для классов: конструктор по умолчанию.
   * Для ссылок: ошибка.
-* "Value initialization": `new T()`, `new T[10]()`, `T a(10);`, объявили поле и указали `a()` в member initialization list.
+* "Value initialization": `new T()`, `new T[10]()`,, объявили поле и указали `a()` в member initialization list.
   * Сначала заполнили всё нулями, потом default initialization. Отличие только для `int`.
 * "Direct initialization": добавили параметры конструктора: `new T(10, 20)`, `new T[10](20, 30)`, `T a(20, 30)`.
 * The most vexing parse: `Foo f();`.

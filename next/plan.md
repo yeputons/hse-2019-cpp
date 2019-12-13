@@ -1,5 +1,4 @@
-08.11.2019: value-initialization на самом деле не делает zero-initialization! Для интов делает, и если нет явного конструктора по умолчанию, тоже делает.
+list-initialization (uniform initialization syntax).
 
 # Ещё дальше
-* Placement new (когда-то ещё будет?) и "время жизни объектов != выделена память".
-* swap: https://stackoverflow.com/a/5695855
+* Рядом с namespaces/ADL/шаблонами: swap: https://stackoverflow.com/a/5695855

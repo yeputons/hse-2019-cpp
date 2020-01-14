@@ -1,4 +1,8 @@
 list-initialization (uniform initialization syntax).
 
 # Ещё дальше
-* Рядом с namespaces/ADL/шаблонами: swap: https://stackoverflow.com/a/5695855
+* ADL:
+  https://en.cppreference.com/w/cpp/language/adl
+  Для `operator<<`
+  Для `swap`: https://stackoverflow.com/a/5695855
+  `namespace internal` для отключения случайного ADL

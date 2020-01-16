@@ -1,6 +1,7 @@
 list-initialization (uniform initialization syntax).
 
 # Ещё дальше
+* Как объявлять константы (числа, строчки) как статические члены классов.
 * ADL:
   https://en.cppreference.com/w/cpp/language/adl
   Для `operator<<`

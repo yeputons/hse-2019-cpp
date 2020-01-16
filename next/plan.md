@@ -1,6 +1,8 @@
 list-initialization (uniform initialization syntax).
 
 # Ещё дальше
+* Ошибки в описании своих манипуляторов: на самом деле `operator()` надо потому руками перегружать с `operator<<`.
+  Там только для свободных функций есть `operator<<`.
 * Как объявлять константы (числа, строчки) как статические члены классов.
 * ADL:
   https://en.cppreference.com/w/cpp/language/adl

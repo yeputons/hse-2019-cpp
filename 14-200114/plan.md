@@ -291,11 +291,11 @@ struct hex_impl {} hex; // Можно объявить глобальную пе
 ostream& hex(ostream& os) { ... } // Есть перегрузка operator<< для функций
 struct eat {
     eat(char _c) : c(_c) {}
-    istream& operator()(istream &is) {
+    friend istream& operator<<(istream &is, const eat &e /* тут const для временных объектов */) {
         ...
     }
 private:
     char c;
 };
-std::cin >> eat('x'); // eat('x') — это объект с `operator()`, очень похоже на функцию
+std::cin >> eat('x');
 ```

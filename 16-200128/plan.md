@@ -68,8 +68,3 @@ TODO
 
 * `static inline` vs `static constexpr` (лучше второе, чтобы была гарантия)
 
-## ADL
-https://en.cppreference.com/w/cpp/language/adl
-Для `operator<<`
-Для `swap`: https://stackoverflow.com/a/5695855
-`namespace internal` для отключения случайного ADL

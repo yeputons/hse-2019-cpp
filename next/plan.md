@@ -1,6 +1,8 @@
 list-initialization (uniform initialization syntax).
 
 ## ADL
+Вызов конструктора не находится через ADL (и слава богу, теперь namespace no_adl работает).
+friend namespace injection в стандартном C++ нет
 https://en.cppreference.com/w/cpp/language/adl
 Для `operator<<`
 Для `swap`: https://stackoverflow.com/a/5695855

@@ -78,6 +78,7 @@
   struct Song : Music, Lyrics {
       Song(...) : Music(...), Lyrics(...), album(...) {}
       std::string album;
+      // using Music::date;
   };
   Song s;
   x = s.Music::date;

@@ -238,4 +238,143 @@ auto v3 = c;  // T=const int*, ТИП=const int*
 auto v4 = d;  // T=const int*, ТИП=const int*
 ```
 
-# Шаблонный стэк с гарантиями исключений [00:35]
+# Шаблонный стэк с гарантиями исключений [00:40]
+## Постановка задачи [00:05]
+Хотим написать:
+```
+template<typename T>
+struct stack {
+private:
+    T *data;
+    size_t len, cap;
+public:
+    stack() : data(nullptr), len(0), cap(0) {}
+    /* stack(const stack&); */
+    ~stack();
+    bool empty() / *const */ { return len == 0; };
+    size_t length() /* const */ { return len; };
+
+    void reserve(size_t newcap);
+    /* stack& operator=(const stack&); */
+
+    void push(T /* const T& */);
+    T pop();
+};
+```
+
+При этом хотим строгую гарантию исключений для всех операций.
+* Правило трёх, тут везде строгие гарантии:
+  ```
+  template<typename T> stack::~stack() { delete[] data; }  // Даже если data == nullptr
+  template<typename T> stack::stack(const stack &other) : data(new data[other.len]), len(other.len), cap(other.len) {
+      for (size_t i = 0; i < len; i++)
+          data[i] = other.data[i];
+      /* catch (...) { delete[] data; throw; } /* мы же в конструкторе; или заменить на unique_ptr */ */
+  }
+  template<typename T> stack<T>& /*auto*/ stack::operator=(stack other) {
+      swap(other);
+      return *this;
+  }
+  ```
+* ```
+  template<typename T> void stack::reserve(size_t newcap) {
+      if (newcap < cap) return;
+      /* unique_ptr */ T *newdata = new T[newcap];
+      for (size_t i = 0; i < len; i++)
+          newdata[i] = data[i];
+      delete[] data;
+      data = newdata;
+      cap = newcap;
+  }
+  ```
+
+## Сложности с `operator=` [00:05]
+* Без copy-and-swap:
+  ```
+  template<typename T> stack<T>& stack::operator=(const stack &other) {
+      if (this == &other) return *this;  // Необязательно.
+      reserve(other.len);
+      for (size_t i = 0; i < other.len; i++)
+          data[i] = other.data[i];  // Если кинуло, то упс.
+      len = data[i];
+      return *this;
+  }
+  ```
+  Правильнее (никогда не портим старые данные до самого конца):
+  ```
+  template<typename T> stack<T>& stack::operator=(const stack &other) {
+      if (this == &other) return *this;  // Обязательно!
+      /* unique_ptr<T/*[]*/>, иначе утечка */ T *newdata = new T[other.len];
+      for (size_t i = 0; i < other.len; i++) // Можно вынести в функцию, чтобы не дублировать код.
+          newdata[i] = other.data[i];
+      delete[] data;  // Не должно кидать.
+      data = newdata;
+      len = cap = other.len;
+      return *this;
+  }
+  ```
+
+## Сложности с `pop` [00:05]
+* ```
+  template<typename T> void push(const T &value) {
+      reserve(len + 1);
+      data[len++] = value;
+  }
+  ```
+* ```
+  template<typename T> T pop() {
+      return data[len--];
+  }
+  ```
+  Проблема: если при копировании элемента вылетело исключение, то он уже убран из стэка.
+  До C++11 тут ничего разумного не сделать.
+  Поэтому обычно разделяют на `void pop()` и `T top()`.
+
+## Placement new, ручной вызов деструктора, выравнивание памяти [00:05]
+* Проблема: может не быть `T()`.
+  Например, у `Employee` (`Developer`, `SalesManager`).
+  Тогда `new T[10]` не сработает.
+* Надо сначала выделить кусок памяти из байт, а потом руками вызывать конструкторы и деструкторы.
+* ```
+  #include <memory> // Чтобы не было ошибки "no matching function to call to 'operator new(sizetype, void*&)`"
+  struct Foo { Foo(int) {} };
+  int main() {
+      void *data = aligned_alloc(alignof(Foo), sizeof(Foo) * 3);  // Или malloc(sizeof(Foo) * 3);
+      Foo *a = new (data) Foo(10);  // placement new
+      Foo *b = new (static_cast<char*>(data) + sizeof(Foo)) Foo(20);
+      Foo *c = new (static_cast<char*>(data) + sizeof(Foo) * 2) Foo(30);
+      c->~Foo(); // Явный вызов деструктора.
+      b->~Foo();
+      a->~Foo();
+      std::free(data);
+  }
+  ```
+  Выравнивание по-хорошему надо (например, для атомарных переменных),
+  по факту `malloc` может быть достаточно хорош.
+* А теперь надо везде заменить `new[]` и `delete[]` на вот такое перевыделение памяти.
+
+## Обновление конструктора копирования [00:05]
+```
+template<typename T> stack::stack(const stack &other) : data(aligned_alloc(alignof(T), sizeof(T) * other.len]), len(other.len), cap(other.len) {
+    size_t i = 0;
+    try {
+        for (; i < len; i++)
+            data[i] = other.data[i];
+    } catch (...) {
+        for (; i > 0; i--)
+            data[i].~T();
+        free(data);
+        throw;
+    }
+}
+```
+
+## Обновление оператора присваивания [00:10]
+TODO
+
+## Вынос `stack_impl` [00:05]
+Можно сделать то же самое, но лучше, если вынести отдельный класс `stack_impl`, который хранит `data`, `len`, `capacity`,
+не теряет память и вызывает деструкторы.
+А тут вызывать только конструкторы.
+
+TODO

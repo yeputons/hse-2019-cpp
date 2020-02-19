@@ -108,6 +108,6 @@ int main() {
         printf("Popping from stk1\n");
         stk1.pop();
     }
-    printf("Destructing all stacks\n");
+    printf("Destructing all stacks and local variables\n");
     return 0;
 }

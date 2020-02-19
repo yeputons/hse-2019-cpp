@@ -6,7 +6,7 @@ using std::printf;
 
 struct Watcher {
 private:
-    static int LastId;
+    static int LastId, Alive;
 
     int id;
     int value = 0;
@@ -14,15 +14,18 @@ private:
 public:
 
     Watcher() : id(LastId++) {
-        printf("Watcher %d (val=%d) constructed by Watcher()\n", id, value);
+        Alive++;
+        printf("Watcher %d (val=%d) constructed by Watcher(), Alive=%d\n", id, value, Alive);
     }
 
     explicit Watcher(int _value) : id(LastId++), value(_value) {
-        printf("Watcher %d (val=%d) constructed by Watcher(int)\n", id, value);
+        Alive++;
+        printf("Watcher %d (val=%d) constructed by Watcher(int), Alive=%d\n", id, value, Alive);
     }
 
     Watcher(const Watcher &other) : id(LastId++), value(other.value) {
-        printf("Watcher %d (val=%d) constructed from %d (val=%d)\n", id, value, other.id, other.value);
+        Alive++;
+        printf("Watcher %d (val=%d) constructed from %d (val=%d), Alive=%d\n", id, value, other.id, other.value, Alive);
     }
 
     Watcher& operator=(const Watcher &other) {
@@ -32,7 +35,8 @@ public:
     }
 
     ~Watcher() {
-        printf("Watcher %d (val=%d) destructed\n", id, value);
+        Alive--;
+        printf("Watcher %d (val=%d) destructed, Alive=%d\n", id, value, Alive);
     }
 
     int getId() const { return id; }
@@ -40,6 +44,7 @@ public:
 };
 
 int Watcher::LastId = 1;
+int Watcher::Alive = 0;
 
 int main() {
     Watcher a, b(1000), c(2000), d(3000), e(4000);

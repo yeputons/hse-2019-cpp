@@ -31,7 +31,9 @@
 ```
  #include <cstdlib> // Для aligned_alloc
  #include <memory> // Чтобы не было ошибки "no matching function to call to 'operator new(sizetype, void*&)'"
-stack(const stack &other) : data(std::aligned_alloc(alignof(T), sizeof(T) * other.len]), len(other.len), cap(other.len) {
+stack(const stack &other) : data(static_cast<T*>(std::aligned_alloc(alignof(T), sizeof(T) * other.len])), len(other.len), cap(other.len) {
+    // TODO: проверить, что data - не nullptr, иначе выбросить bad_alloc.
+    // Или просто new char[] и забить на выравнивание, заодно можно `unique_ptr<char[]>` использовать.
     size_t i = 0;
     try {
         for (; i < len; i++)
@@ -62,6 +64,9 @@ void reserve(std::size_t newcap) {
     cap = newcap;
 }
 ```
+На самом деле `unique_ptr` тут нельзя, потому что он будет удалять через `delete`/`delete[]`,
+а не через `std::free`.
+Так что либо `new char[]`, либо свой deleter в `unique_ptr`.
 
 Оператор присваивания: либо copy-and-swap, либо заморачиваемся и пишем почти как в `reserve`.
 Это третий раз копипаст кода из конструктора копирования.
@@ -81,12 +86,15 @@ template<typename T>
 struct stack {
 private:
     struct stack_impl { // Все поля публичные.
-        unique_ptr<T> data;
+        T *data;  // unique_ptr нельзя, потому что там не T[].
         size_t len = 0, cap;
         stack_impl(size_t _cap = 0)
-            : data(std::aligned_alloc(alignof(T), sizeof(T) * other.len])
+            : data(static_cast<T*>(std::aligned_alloc(alignof(T), sizeof(T) * other.len]))
             , len(0)
-            , cap(cap) {}
+            , cap(cap) {
+            // TODO: проверить, что data - не nullptr, иначе bad_alloc.
+            //       Или просто new char[].
+        }
         // stack_impl(const stack_impl&) = delete;  // Уже удалено из-за unique_ptr.
         // stack_impl& operator=(const stack_impl&) = delete;   // Уже удалено из-за unique_ptr.
         ~stack_impl() {
@@ -226,84 +234,8 @@ void push(T other) {
    оборачиваем её в `std::move()`.
 3. Если функция что-то копирует, то __обычно__ принимает параметр по значению, а не по константной ссылке.
 
-# Move-семантика — реализация [00:30]
-## Категории значений [00:10]
-* Ссылки
-  * https://en.cppreference.com/w/cpp/language/value_category
-  * https://habr.com/ru/post/441742/
-* Чистые категории:
-  * lvalue — у этого есть имя, нельзя разрушать.
-    * Имя переменной: `var`
-    * Обращения к полям: `a.m` (тут `a` — lvalue)
-    * Обращение по указателю: `p->m` (тут `p` — что угодно)
-    * То, что возвращает `T&`: `*p`, `a[i]` (если `a` lvalue для встроенных массивов), `getLval()` (если `int& getLval()`), `static_cast<int&>(x)`
-    * Свойства:
-      * Можно взять адрес
-      * Можно написать "слева"
-  * prvalue (как бы были раньше) — имени нет, сейчас помрёт, можно разрушить.
-    * Литералы: `42`, `nullptr`
-    * То, что возвращает по значению: `a + b`, `getVal()` (если `int getVal();`)
-    * Обращения к полям: `a.m` (где `a` — prvalue)
-    * `this`
-    * Лямбда
-    * Свойства:
-      * Не полиморфное, мы точно знаем тип.
-  * xvalue — новая категория — имя есть, но можно разрушить.
-    * То, что возвращает `T&&`: `static_cast<int&&>(x)`, `std::move(x)` (это просто `static_cast` внутри).
-    * Обращения к полям: `a.m` (тут `a` — xvalue).
-* Смешанные категории:
-  * glvalue — то, у чего есть имя. lvalue или xvalue.
-  * rvalue — то, из чего можно мувать. prvalue или xvalue.
-* Тонкость: `return v;` из функции — в стандарте стоит костыль, чтобы тут вызывался
-  move, а не copy, несмотря на то, что `v` — lvalue.
-
-## rvalue-ссылки [00:05]
-* C++11 добавляет новый вид ссылки: rvalue-ссылка: `Foo&& x = foo();`
-* Это работает точно так же, как обычная константная ссылка: может биндится только к rvalue (xvalue, prvalue).
-* А обычная ссылка может биндится только к glvalue. К prvalue не может.
-* `const Foo&&` — хрень, не пишите так. Забиндится, но move не сработает.
-
-## Move-семантика — конструктор перемещения и оператор перемещающего присваивания [00:10]
-* Конструктор перемещения — просто перегрузка:
-  ```
-  stack(const stack &other) : data(new ...), ... {}
-  stack(/*const, WTF */ stack &&other) /*noexcept*/ : data(std::move(other.data)), cap(std::move(other.cap)), len(std::move(other.len)) {} {
-      // Здесь важно, что std::move(other.data), потому что это unique_ptr.
-      // А дальше важно занулить cap/len. std::move — это просто смена категории. Для примитивных типов ничем от копирования не отличается.
-      other.cap = other.len = 0;
-  }
-  ```
-* Аналогично с оператором присваивания:
-  ```
-  stack& operator=(stack &&other) /* noexcept */ {
-      if (this == &other) return *this;
-      data = std::move(other.data);
-      cap = other.cap;
-      len = other.len;
-      other.cap = other.len = 0;
-      return *this;
-  }
-  ```
-  Или можно просто `swap`. Нам же необязательно оставлять `other` пустым.
-* И тут copy-and-swap позволяет нам не реализовывать два оператора:
-  ```
-  stack& operator=(stack other) {
-      swap(data, other.data);
-      return *this;
-  }
-  ```
-* Обычно move не кидает исключений. Сам конструктор/оператор присваивания.
-  Это полезно и гораздо чаще noexcept copy.
-* Итого move-семантика в своих классах:
-  * Правило пяти вместо правила трёх. И лучше правило нуля :)
-  * `std::move` уже нужен почаще.
-  * `move` можно просто выразть через `swap`.
-    В конструкторе — с пустым.
 
 ## Move-семантика в стеке [00:05]
-* Осторожно с universal reference (с ними будем потом):
-  * `template<typename T> foo(T&& x) {}` // move не ок; может схватить и lvalue.
-  * `template<typename T> foo(vector<T>&& x) {}` // move ок, схватит только rvalue.
 * `reserve` в стеке
   * При перевыделении буфера можно делать move.
   * Если есть noexcept move для элементов (что вероятнее noexcept copy), то будет строгая гарантия (в домашке надо).

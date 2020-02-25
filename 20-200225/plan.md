@@ -138,23 +138,25 @@ void reserve(std::size_t newcap) {
 ## Проблемы [00:05]
 1. Много копирований не по делу:
    ```
-   class Employee {
-       std::string firstName, lastName;
-   public:
-       Employee(std::string _firstName, std::string _lastName) : firstName(_firstName), lastName(_lastName) {}
+   struct Foo {  // Например, сотрудник.
+       string a, b;  // Например, имя и фамилия.
+       Foo(string /*const&*/_a, string _b) : a(_a), b(_b) {}
    };
    // ...
-   std::string readName() {
-       std::string result;
-       std::cin >> result;
+   string readString() {
+       string result;
+       cin >> result;
        return result;
    }
    // ...
-   std::string firstName = readName();
-   std::string lastName = readName();
-   Employee e(firstName, lastName);
+   vector<Foo> v = ...;
+   std::string a = readString();
+   std::string b = readString();
+   v.push_back(Foo(a, b)); // Переменные хочу, чтобы явно указать порядок.
    ```
    NRVO-то поможет (хотя это и сложно), а вот дальше никак.
+   Копируем и в конструктор `Foo` (хотя там можно ссылку вставить), и в поле,
+   а потом ещё и сам `Foo`.
 2. `unique_ptr` нельзя копировать, но надо возвращать из функций.
    Надо "гарантированное" RVO или что-то похожее.
 
@@ -165,22 +167,23 @@ void reserve(std::size_t newcap) {
    * В `b` теперь непонятно что (moved from), но что-то очень корректное.
      Не просто деструктор вызовется, а можно все операции без предусловий вызывать (size, push_back, clear).
      Не UB.
-2. Технически для этого придумываются конструктор перемещения (`Foo(Foo&&)`) и
-   оператор перемещающего присваивания (`Foo& operator=(Foo&&)`).
+2. Технически для этого придумываются конструктор перемещения (`string(string&&)`) и
+   оператор перемещающего присваивания (`string& operator=(string&&)`), вдобавок к "правилу трёх",
+   получается "правило пяти".
    Здесь `Foo&&` — обозначение "сюда только временные значения", к ним ещё вернёмся.
    В стандартной библиотеке такое есть у всех.
    У кого-то даже сказано, что такое "moved from state" (например, у `unique_ptr` это пустое).
-   А примитивным типам не надо.
+   При правиле нуля и примитивным типам такое не надо.
 3. А дальше компилятор автоматически понимает, кто временный, а кто нет.
    Если просто взяли программу и скомпилировали с C++11, move-семантика уже заработала.
-   Правило нуля автоматически включит move-семантику.
+   Правило нуля автоматически включит move-семантику для пользовательских типов.
    STL-контейнеры работают.
    Всё ускорится.
 4. Мы можем подсказать (обязательно в случае `unique_ptr`):
    ```
-   std::string firstName = readName();
-   std::string lastName = readName();
-   Employee e(std::move(firstName), std::move(lastName));
+   std::string a = readName();
+   std::string b = readName();
+   v.push_back(Foo(std::move(a), std::move(b)));
    ```
 5. Обращаю внимание, что `std::move` лишь обозначает значение как временное,
    но перемещение не делает.

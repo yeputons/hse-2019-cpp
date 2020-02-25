@@ -4,6 +4,110 @@ list-initialization (uniform initialization syntax).
 Приватное наследование нужно для, например, boost::noncopyable.
 Или какого-нибудь другого свойства, которое требуется всем экземплярам класса.
 
+# Правила вывода типов [00:20]
+## Где случается [00:07]
+CppCon 2014: Scott Meyers "Type Deduction and Why You Care"
+(первые полчаса; забить на `decltype`, `T&&`/universal references)
+
+В C++03 был только автовывод параметров у функций, просто работало.
+
+* Дано: `template<typename T> void foo(ТИП x);` и вызываем `foo(value);`.
+  Надо найти: `T = ?`, `ТИП = ?`.
+  Они могут отличаться.
+  Например, если `ТИП=vector<T>` или `ТИП = T&` или `ТИП=vector<T*>*`.
+* В C++11 появляются `auto` переменные:
+  ```
+  auto x = max(10, 20);
+  map<int, int> my_map;
+  auto it = my_map.begin();
+  ```
+  Здесь слово `auto` играет роль `T`.
+* Также в C++11 появляются лямбды, у них надо возвращаемое значение:
+  ```
+  auto lambda = [&](int a, int b) /* -> bool*/ { return a * x < b * x; }
+  ```
+* А в C++14 появляется вывод типов для любых функций: вывели для первого `return`.
+  Дальше они все должны совпасть.
+  Если `return`'ов нет, то `void`.
+  ```
+  auto sum(int n) {
+      if (n == 0) return 0;
+      else return n + sum(n - 1);  // Окей, тип уже знаем. Поменять местами не окей.
+  }
+  ```
+* Ещё в C++14 появляются lambda init capture:
+  ```
+  int x = 10, y = 20;
+  auto lambda = [z = x + y](int a) { return a * z; };
+  assert(lambda(-1) == -30);
+  ```
+
+## Общая схема [00:02]
+Идём рекурсивно по `ТИП` сверху вниз.
+Будем разбирать такой пример:
+```
+template<typename T> void foo(T &x); // ТИП=T&
+int x;
+const int cx = x;
+const int &rx = x;
+```
+
+## По значению [00:05]
+Если видим `НЕЧТО` без ссылок и констант: хотим копию значения.
+
+* Если `value` — ссылка, убери это.
+* Если `value` — `const` или `volatile` на верхнем уровне, убери это.
+* То, что осталось — делай pattern matching с `НЕЧТО`.
+
+```
+auto v7 = x; // T = int, ТИП = int
+auto v8 = cx; // T = int, ТИП = int
+auto v9 = rx; // T = int, ТИП = int
+```
+
+## Для ссылок и указателей [00:06]
+Если видим `НЕЧТО*` или `НЕЧТО&`:
+
+* Если `value` — ссылка, убери это.
+* Сделай pattern-matching типа `value` с `НЕЧТО`, выясни `T`.
+  Оно никогда не ссылка.
+
+```
+foo(x); // T = int, ТИП = int&
+foo(cx); // T = const int, ТИП = const int&
+foo(rx); // T = const int, ТИП = const int&
+```
+
+`auto`-переменная работает так же:
+```
+auto &v1 = x; // T = int, ТИП = int&
+auto &v2 = cx; // T = const int, ТИП = const int&
+auto &v3 = rx; // T = const int, ТИП = const int&
+const auto &v4 = x; // T = int, ТИП = const int&
+const auto &v5 = cx; // T = int, ТИП = const int&
+const auto &v6 = rx; // T = int, ТИП = const int&
+```
+
+При этом `const` лежит "за" ссылкой:
+```
+template<typename T> void bar(const T &x);
+bar(x); // T = int, ТИП = const int&
+bar(cx); // T = int, ТИП = const int&
+bar(rx); // T = int, ТИП = const int&
+```
+
+На засыпку:
+```
+int *a;
+int * const b;
+const int * c;
+const int * const d;
+auto v1 = a;  // T=int*, ТИП=int*
+auto v2 = b;  // T=int*, ТИП=int*
+auto v3 = c;  // T=const int*, ТИП=const int*
+auto v4 = d;  // T=const int*, ТИП=const int*
+```
+
 # Статические члены классов-константы [00:15]
 ## Линковка обычных констант [00:05]
 * Обычно слово `const` для глобальных переменныех автоматически влечёт

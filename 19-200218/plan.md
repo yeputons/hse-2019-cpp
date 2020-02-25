@@ -269,7 +269,7 @@ template<typename T> stack::stack(const stack &other) : data(aligned_alloc(align
             data[i] = other.data[i];
     } catch (...) {
         for (; i > 0; i--)
-            data[i].~T();
+            data[i - 1].~T();
         free(data);
         throw;
     }

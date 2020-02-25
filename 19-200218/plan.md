@@ -263,6 +263,7 @@ public:
 ## Обновление конструктора копирования [00:05]
 ```
 template<typename T> stack::stack(const stack &other) : data(aligned_alloc(alignof(T), sizeof(T) * other.len]), len(other.len), cap(other.len) {
+    // TODO: проверить, что data - не nullptr, иначе выбросить bad_alloc.
     size_t i = 0;
     try {
         for (; i < len; i++)

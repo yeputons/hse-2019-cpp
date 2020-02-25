@@ -1,52 +1,36 @@
-# Шаблонный стэк с гарантиями исключений и превыделенной памятью [00:35]
-## Напоминание про стэк и предвыделенную память [00:05]
+# Шаблонный стэк с гарантиями исключений и превыделенной памятью [00:25]
+## Напоминание про стэк и предвыделенную память [00:02]
 * Пишем стэк, как в `19-200218`:
   ```
-  template<typename T>
+  /*template<typename T>
   struct my_stack {
-  private:
+  private:*/
       T *data;
       std::size_t len, cap;
-  public:
+  /*public:
       my_stack() noexcept;
       my_stack(const my_stack&);
       my_stack& operator=(const my_stack&);
       ~my_stack();
+      bool empty() const noexcept;
+      std::size_t length() const noexcept;
+  */
       void reserve(std::size_t newcap);
-      void push(const T&);
+  /*    void push(const T&);
       void pop();
       T top() const;
       // Ещё есть empty(), length()
-  };
+  };*/
   ```
-* Проблема: может не быть `T()`.
+* Проблема: может не быть `T()`, тогда не сработает `data = new T[cap]`.
   Например, у `Employee` (`Developer`, `SalesManager`).
-  Тогда `new T[10]` не сработает.
 * Надо сначала выделить кусок памяти из байт, а потом руками вызывать конструкторы и деструкторы.
-
-## Напоминание про placement new и деструкторы [00:05]
-* В отличие от прошлой лекции, лучше сразу скастовать указатель к `T*`, будет удобнее:
-  ```
-  #include <cstdlib> // Для aligned_alloc
-  #include <memory> // Чтобы не было ошибки "no matching function to call to 'operator new(sizetype, void*&)`"
-  struct Foo { Foo(int) {} };
-  int main() {
-      T *data = static_cast<Foo*>(std::aligned_alloc(alignof(Foo), sizeof(Foo) * 3));  // Или std::malloc(sizeof(Foo) * 3);
-      Foo *a = new (data) Foo(10);  // placement new
-      /*Foo *b = new (data + 1) Foo(20);
-      Foo *c = new (data + 2) Foo(30);
-      c->~Foo();
-      b->~Foo();*/
-      a->~Foo(); // Явный вызов деструктора.
-      std::free(data);
-  }
-  ```
-  Выравнивание по-хорошему надо (например, для атомарных переменных),
-  по факту `malloc` может быть достаточно хорош.
-* А теперь надо везде заменить `new[]` и `delete[]` на вот такое перевыделение памяти.
+  Для этого есть placement new и явный вызов деструктора.
 
 ## Обновление конструктора копирования [00:05]
 ```
+ #include <cstdlib> // Для aligned_alloc
+ #include <memory> // Чтобы не было ошибки "no matching function to call to 'operator new(sizetype, void*&)'"
 stack(const stack &other) : data(std::aligned_alloc(alignof(T), sizeof(T) * other.len]), len(other.len), cap(other.len) {
     size_t i = 0;
     try {
@@ -61,28 +45,31 @@ stack(const stack &other) : data(std::aligned_alloc(alignof(T), sizeof(T) * othe
     }
 }
 ```
+Выравнивание по-хорошему надо (например, для атомарных переменных),
+по факту `malloc` может быть достаточно хорош.
+
 Держать на доске!
 
-## Обновление reserve [00:05]
+## Обновление reserve и оператора присваивания [00:05]
 ```
 void reserve(std::size_t newcap) {
     /* unique_ptr<T/*[]*/> *newdata = static_cast<T*>(std::aligned_alloc(alignof(T), sizeof(T) * newcap));
     // Точный код из конструктора копирования, только в newdata.
     for (size_t i = len; i > 0; i--)
         data[i - 1].~T();
+    std::free(data);
     data = newdata.release();
     cap = newcap;
 }
 ```
 
-## Обновление оператора присваивания [00:02]
-Либо copy-and-swap. Либо заморачиваемся и пишем почти как в `reserve`.
-Третий раз копипаст.
+Оператор присваивания: либо copy-and-swap, либо заморачиваемся и пишем почти как в `reserve`.
+Это третий раз копипаст кода из конструктора копирования.
 
 ## Вынос `stack_impl` [00:13]
 Можно сделать то же самое, но лучше, если вынести одно из двух:
-* Код из конструктора копирования, который копирует в предвыделенный
-  буфер данные.
+* В отдельную функцию код из конструктора копирования, который копирует в
+  предвыделенный буфер данные.
 * Отдельный класс `stack_impl`, который хранит `data`, `len`, `capacity`,
   не теряет память и вызывает деструкторы.
   Этот вариант лучше, потому что он позволяет вызывать не только копирование,

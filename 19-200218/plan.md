@@ -1,4 +1,4 @@
-# Долги
+# Долги [00:07]
 А вот `template<typename T, typename U> void foo(U x);` и `foo<void>(10)`
 уже вызовется: `T=void` явно, `U` вывели сами.
 
@@ -9,8 +9,8 @@
 
 Тип лямбды неизвестен, его явно не указать, только автовыводом.
 
-# Мелочи шаблонов [00:30]
-## typedef, using [00:04]
+# Мелочи шаблонов [00:45]
+## typedef, using [00:06]
 * Инстанцированный шаблон — это тип, можно сделать `typedef`: `typedef vector<int> vi;`
 * Неинстанцированный — нельзя: `typedef vector v;` не работает.
 * Два костыля:
@@ -19,25 +19,29 @@
 * Нормальный способ: `template<typename T> using v = vector<T>`, называется alias template.
   * Можно и хитрое: `template<typename T>
 
-## Много параметров, параметры по умолчанию [00:03]
+## Много параметров, параметры по умолчанию, параметры-значения [00:07]
 ```
+/*
 template<typename T, typename U = void, typename V = int>
 struct T { ... };
 T<char> x; // T<char, void, int>
 T<char, char> y; // T<char, char, int>
 T<char, char, char> z; // T<char, char, char>
+*/
 ```
 С функциями тоже работает.
 Только там ещё есть автовывод типов.
 
-## Параметры-значения [00:03]
 ```
-template<typename T, std::size_t N /* = 10 */>
+template<typename T /* = int */, std::size_t N /* = 10 */>
 struct my_array {
     T arr[N];
     std::size_t size() const { return N; }
 };
 my_array<int, 10> arr;
+my_array<int> arr;
+my_array<> arr;
+my_array arr;  // Ок с C++17 из-за class template argument deduction.
 ```
 Можно указывать простые параметры: целые числа (`bool` тоже), любые указатели и ссылки на статические переменные.
 Нельзя указывать `std::string` и сложные типы.
@@ -55,6 +59,9 @@ struct priority_queue {
 priority_queue<int>  // priority_queue<int, std::vector>
 priority_queue<int, priority_queue>  // struct priority_queue<int, priority_queue> { priority_queue<int> c; }
 ```
+
+Тут окей даже несмотря на то, что `std::vector` на самом деле имеет больше одного шаблонного
+параметра (просто второй и дальше имеют значения по умолчанию).
 
 ### Шаблонные методы в шаблонных классах [00:05]
 ```
@@ -86,7 +93,7 @@ struct shared_ptr {
 
 Можно не только с конструкторами, но и с методами.
 
-## Вложенные типы/значения и слова `typename`/`template` [00:05]
+## Вложенные типы/значения и слова `typename`/`template` [00:17]
 ```
 template<typename T> struct A { ... };
 template<typename T> struct B {
@@ -145,7 +152,7 @@ void bar() {
 перебрать конструкторы и решить уравнение на типы класса.
 Можно добавлять и свои уравнения, но мы не будем.
 
-# Шаблонный стэк с гарантиями исключений [00:40]
+# Шаблонный стэк с гарантиями исключений [00:33]
 ## Постановка задачи [00:05]
 Хотим написать:
 ```
@@ -169,11 +176,12 @@ public:
 };
 ```
 
+## Строгая гарантия исключений [00:17]
 При этом хотим строгую гарантию исключений для всех операций.
 * Правило трёх, тут везде строгие гарантии:
   ```
   template<typename T> stack::~stack() { delete[] data; }  // Даже если data == nullptr
-  template<typename T> stack::stack(const stack &other) : data(new data[other.len]), len(other.len), cap(other.len) {
+  template<typename T> stack::stack(const stack &other) : data(new T[other.len]), len(other.len), cap(other.len) {
       for (size_t i = 0; i < len; i++)
           data[i] = other.data[i];
       /* catch (...) { delete[] data; throw; } /* мы же в конструкторе; или заменить на unique_ptr */ */
@@ -195,33 +203,7 @@ public:
   }
   ```
 
-## Сложности с `operator=` [00:05]
-* Без copy-and-swap:
-  ```
-  template<typename T> stack<T>& stack::operator=(const stack &other) {
-      if (this == &other) return *this;  // Необязательно.
-      reserve(other.len);
-      for (size_t i = 0; i < other.len; i++)
-          data[i] = other.data[i];  // Если кинуло, то упс.
-      len = data[i];
-      return *this;
-  }
-  ```
-  Правильнее (никогда не портим старые данные до самого конца):
-  ```
-  template<typename T> stack<T>& stack::operator=(const stack &other) {
-      if (this == &other) return *this;  // Обязательно!
-      /* unique_ptr<T/*[]*/>, иначе утечка */ T *newdata = new T[other.len];
-      for (size_t i = 0; i < other.len; i++) // Можно вынести в функцию, чтобы не дублировать код.
-          newdata[i] = other.data[i];
-      delete[] data;  // Не должно кидать.
-      data = newdata;
-      len = cap = other.len;
-      return *this;
-  }
-  ```
-
-## Сложности с `pop` [00:05]
+## Сложности с `pop` [00:03]
 * ```
   template<typename T> void push(const T &value) {
       reserve(len + 1);
@@ -237,7 +219,7 @@ public:
   До C++11 тут ничего разумного не сделать.
   Поэтому обычно разделяют на `void pop()` и `T top()`.
 
-## Placement new, ручной вызов деструктора, выравнивание памяти [00:05]
+## Placement new, ручной вызов деструктора, выравнивание памяти [00:08]
 * Проблема: может не быть `T()`.
   Например, у `Employee` (`Developer`, `SalesManager`).
   Тогда `new T[10]` не сработает.
@@ -259,30 +241,6 @@ public:
   Выравнивание по-хорошему надо (например, для атомарных переменных),
   по факту `malloc` может быть достаточно хорош.
 * А теперь надо везде заменить `new[]` и `delete[]` на вот такое перевыделение памяти.
-
-## Обновление конструктора копирования [00:05]
-```
-template<typename T> stack::stack(const stack &other) : data(aligned_alloc(alignof(T), sizeof(T) * other.len]), len(other.len), cap(other.len) {
-    // TODO: проверить, что data - не nullptr, иначе выбросить bad_alloc.
-    size_t i = 0;
-    try {
-        for (; i < len; i++)
-            data[i] = other.data[i];
-    } catch (...) {
-        for (; i > 0; i--)
-            data[i - 1].~T();
-        free(data);
-        throw;
-    }
-}
-```
-
-## Обновление оператора присваивания [00:10]
-TODO
-
-## Вынос `stack_impl` [00:05]
-Можно сделать то же самое, но лучше, если вынести отдельный класс `stack_impl`, который хранит `data`, `len`, `capacity`,
-не теряет память и вызывает деструкторы.
-А тут вызывать только конструкторы.
-
-TODO
+  * Можно сделать то же самое, но лучше, если вынести отдельный класс `stack_impl`, который хранит `data`, `len`, `capacity`,
+    не теряет память и вызывает деструкторы.
+    А тут вызывать только конструкторы.

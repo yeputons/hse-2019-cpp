@@ -43,6 +43,10 @@
   }
   ```
 
+напоминание method ref
+
+Не писать return std::move
+
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Специализации шаблонов [00:25]

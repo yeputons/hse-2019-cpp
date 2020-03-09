@@ -4,6 +4,10 @@ list-initialization (uniform initialization syntax).
 Приватное наследование нужно для, например, boost::noncopyable.
 Или какого-нибудь другого свойства, которое требуется всем экземплярам класса.
 
+`noexcept(...)`
+Функция `noexcept()` вроде `sizeof`/`alignof`.
+Можно использовать `new char[]` вместо `aligned_alloc` и оно будет адекватно работать для почти всех типов: https://stackoverflow.com/a/10588226
+
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Правила вывода типов [00:20]

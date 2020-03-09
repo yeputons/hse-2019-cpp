@@ -4,6 +4,8 @@ list-initialization (uniform initialization syntax).
 Приватное наследование нужно для, например, boost::noncopyable.
 Или какого-нибудь другого свойства, которое требуется всем экземплярам класса.
 
+## Опционально: perfect forwarding и forwarding-ссылки [00:20]
+
 # Правила вывода типов [00:20]
 ## Где случается [00:07]
 CppCon 2014: Scott Meyers "Type Deduction and Why You Care"

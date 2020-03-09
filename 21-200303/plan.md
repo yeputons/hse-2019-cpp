@@ -1,5 +1,5 @@
-# Move-семантика — реализация [00:30]
-## Категории значений [00:20]
+# Move-семантика — реализация [00:32]
+## Категории значений [00:18]
 * Ссылки
   * https://en.cppreference.com/w/cpp/language/value_category
   * https://habr.com/ru/post/441742/
@@ -29,11 +29,12 @@
 * Тонкость: `return v;` из функции — в стандарте стоит костыль, чтобы тут вызывался
   move, а не copy, несмотря на то, что `v` — lvalue.
 
-## rvalue-ссылки [00:10]
+## rvalue-ссылки [00:14]
+* Обычная ссылки биндится только к lvalue (к xvalue не могут).
+* Константная ссылка биндится к чему угодно: и lvalue, и rvalue.
 * C++11 добавляет новый вид ссылки: rvalue-ссылка: `Foo&& x = foo();`
-* Это работает точно так же, как обычная константная ссылка: может биндится только к rvalue (xvalue, prvalue).
-* А обычная ссылка может биндится только к glvalue. К prvalue не может.
-* `const Foo&&` — хрень, не пишите так. Забиндится, но move не сработает.
+  * Это может биндится только к rvalue (xvalue, prvalue).
+* `const Foo&&` — хрень, не пишите так. Забиндится только к rvalue, но move не сработает.
 * Конструктор перемещения — просто перегрузка:
   ```
   stack(const stack &other) : data(new ...), ... {}
@@ -42,15 +43,37 @@
       other.cap = other.len = 0;
   }
   ```
+  * Теперь когда мы пишем `stack s(SOME)` у нас вызывается один из двух конструкторов: наиболее подходящий.
+    В зависимости от категории выражения `SOME`.
+* После инициализации ссылки нам пофиг, к чему она привязывалась.
+  ```
+  Foo f;
+  Foo &x = f;
+  Foo &&y = std::move(f);
+  x // lvalue
+  x.field // lvalue
+  y // lvalue
+  y.field // lvalue
+  std::move(x).field  // xvalue
+  std::move(y).field  // xvalue
+  x.field + 10  // prvalue, если field был типа int (а то вдруг operator+ возвращает ссылку).
+  ```
+* Бывают method ref qualifiers. Раньше у `this` можно было добавлять константность (const qualifier).
+  А теперь можно говорить:
+  * `void push() & { ... }` — `this` должен быть в категории lvalue (т.е. не временный объект, даже не результат `std::move`).
+  * `T top() & { return data[len - 1]; }` — возвращает копию.
+  * `T top() && { return std::move(data[len - 1]); }` — мувает объект из стэка. Всё равно стэк сейчас помрёт.
+* При этом обычно писать `return std::move(....)` не надо:
+  ```
+  Foo foo() {
+      Foo f;
+      // ...
+      return std::move(f);  // Тут писать move не надо. Компилятор гарантирует, что либо (N)RVO, либо move. А если написать move, то (N)RVO отрубится, некруто.
+  }
+  ```
 
-напоминание method ref
-
-Не писать return std::move
-
-## Опционально: perfect forwarding и forwarding-ссылки [00:20]
-
-# Специализации шаблонов [00:25]
-## Синтаксис для `stack<bool>` [00:05]
+# Специализации шаблонов [00:28]
+## Синтаксис для `stack<bool>` [00:06]
 ```
 template<typename T> struct stack { ... }; // Общий случай
 template<>
@@ -59,7 +82,7 @@ struct stack<bool> { // Для конкретных параметров.
 };
 ```
 
-## Частичная специализация [00:05]
+## Частичная специализация [00:06]
 ```
 template<typename T> struct unique_ptr {
     T *data;
@@ -74,7 +97,7 @@ template<typename T> struct unique_ptr<T[]> {
 Работает pattern matching.
 Можно зачем-нибудь специализировать как `template<typename A, typename B> struct unique_ptr<map<A, B>> { ... }`.
 
-## Немного type traits [00:15]
+## Немного type traits [00:08]
 Так можно делать вычисления над типами и значениями на этапе компиляции:
 ```
 template<typename T> struct is_reference { constexpr static bool value = false; };
@@ -96,7 +119,7 @@ template<typename T> struct is_same<T, T> { constexpr static bool value = true; 
 Например, для сериализации: вы пишете общий случай `template<typename T> struct serializer {};`,
 а дальше для каждого типа реализуете `struct serializer { static std::string serialize(const T&); static T deserialize(std::string); }`
 
-## Специализация функций [00:05]
+## Специализация функций [00:08]
 Для функций есть только полная специализация:
 ```
 template<> void swap(Foo &a, Foo &b) { ... }
@@ -108,8 +131,8 @@ template<typename T> void swap(vector<T> &a, vector<T> &b) { ... }
 ```
 По техническим причинам это не всегда хорошо, правда, но таков факт жизни.
 
-# Прокси-объекты [00:15]
-## Для `vector<bool>` [00:10]
+# Прокси-объекты [00:21]
+## Для `vector<bool>` [00:15]
 Если мы делаем битовую упаковку в `vector<bool>`, то мы больше не можем вернуть `bool&`.
 
 Но надо вернуть что-то такое, чтобы `a[i] = false;` работало.
@@ -134,7 +157,7 @@ public:
 };
 ```
 
-## Проблемы [00:05]
+## Проблемы [00:06]
 Начиная с C++11, как только передали в `auto`: `auto x = v[10];`, ой, не `bool`.
 
 Если были forwarding-ссылки: можно использовать хитрость и писать `auto&&`

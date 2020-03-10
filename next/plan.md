@@ -1,5 +1,7 @@
 list-initialization (uniform initialization syntax).
 
+Не надо писать `try { /* ... */ } catch (...) { throw; }`.
+
 Тонкость: строгих гарантий `erase`, `insert`, `emplace` для `vector`/`deque` дают не всегда.
 Но стараются. Надо читать для точность.
 

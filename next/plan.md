@@ -36,6 +36,9 @@ list-initialization (uniform initialization syntax).
 Функция `noexcept()` вроде `sizeof`/`alignof`.
 Можно использовать `new char[]` вместо `aligned_alloc` и оно будет адекватно работать для почти всех типов: https://stackoverflow.com/a/10588226
 
+Можно писать uninitialized_copy
+Можно писать move_if_noexcept (или это в метапрограммирование?)
+
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Правила вывода типов [00:20]

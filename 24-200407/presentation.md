@@ -159,7 +159,7 @@ set<vector<int>>::node_type node = values.extract(hint);
 set<vector<int>> values2;
 values2.insert(std::move(node));  // std::move обязателен
 // values = {{1, 2, 3}, {1, 3, 3}, {4, 4}}
-// values = {{1, 3, 4}}
+// values2 = {{1, 3, 4}}
 ```
 
 ---
@@ -320,3 +320,257 @@ points.emplace(10, 20);  // points.size() == 1
 points.emplace(20, 10);  // points.size() == 2
 points.emplace(10, 20);  // points.size() == 2
 ```
+
+---
+## `stack`, `queue`
+Обёртки над `deque`, у которых убрали методы.
+
+```c++
+template<typename T, typename Container = std::deque<T>>
+struct stack {
+    Container c;
+    void push(const T &value) { c.push_back(value); }
+    void push(T &&value) { c.push_back(std::move(value)); }
+    void pop() { c.pop_back(); }
+    T& top() { return c.back(); }
+    const T& top() const { return c.back(); }
+};
+```
+```с++
+template<typename T, typename Container = std::deque<T>>
+struct queue {
+    Container c;
+    ....
+    void pop() { c.pop_front(); }
+    T& front() { return c.front(); }
+    const T& front() const { return c.front(); }
+    .... back() ....
+};
+```
+
+---
+## `priority_queue`
+"Очередь с приоритетом", двоичная куча в каком-то контейнере:
+```c++
+template<typename T, typename Container = std::vector<T>, typename Compare = ....>
+struct priority_queue {
+    Container c;
+    ....
+    const T& top() { return c[0]; }
+    void push(const T &value) {
+        c.push_back(value);
+        std::push_heap(....);
+    }
+    void push(T &&value);
+    void pop() {
+        std::pop_heap(....);
+        c.pop_back();
+    }
+};
+```
+
+* Итераторов нет, удалять можно только верхний элемент.
+* Функции `std::push_heap`/`std::pop_heap` можно вызывать самостоятельно.
+* Работает ощутимо быстрее `set<T>`.
+
+---
+## `bitset`
+Последовательность из `N` фиксированных бит:
+```c++
+bitset<10> bs(   "0000010011");
+bs.set(2);     // 0000010111
+assert(bs.test(2));
+assert(bs[2]);
+bs.reset(2);   // 0000010011
+bs.flip();     // 1111101100
+assert(bs.count() == 7);
+bs ^= bitset<10>("1100000001");
+               // 0011101101
+assert(bs.count() == 6);
+```
+
+* Конвертируется в строчки, выводится на экран...
+* Операции с битами медленнее `vector<char>`.
+* Массовые операции быстрее `vector<char>` в десяток раз.
+* Полезно для ускорения динамического программирования.
+
+---
+# Хранение объектов
+Смотри [GotW 89](https://herbsutter.com/2013/05/29/gotw-89-solution-smart-pointers/) и
+[GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/).
+
+## Простые переменные и поля
+
+* Если вы всегда владеете объектом единолично — по значению, идеальный вариант:
+  ```c++
+  struct Dsu {
+      vector<int> parent;
+      Dsu(int n) : parent(n, -1) {}
+  };
+  ```
+* Если надо иногда не хранить объект и нет рекурсии — `std::optional` (C++17, +1 байт, нет дополнительных выделений памяти):
+  ```c++
+  struct Config {
+      optional<string> outputFileName;
+  };
+  ```
+
+---
+## Умные указатели: `unique_ptr`
+* Если есть рекурсия или надо передавать владение объектом, но владелец всегда один — `std::unique_ptr`
+  ```c++
+  struct SearchTreeNode {
+      std::unique_ptr<SearchTreeNode> left, right;
+      int key; string value;
+  };
+  ```
+* Если надо явно передать функции владение объектом, который не хочется копировать/перемещать
+  ```c++
+  void passToAnotherProcessAndForget(std::unique_ptr<SomeData> iOwnItNow);
+  ```
+* Если надо вернуть владение из функции:
+  ```c++
+  std::unique_ptr<SomeData> readFromAnotherProcess();
+  ```
+
+---
+## Про `unique_ptr`
+* Используется часто.
+* Можно указать свой функтор удаления (вроде `fclose`), но лучше полностью написать RAII-обёртку (вроде `istream`/`ostream`).
+* Можно узнать значение указателя для совместимости:
+  ```c++
+  {
+      std::unique_ptr<SomeData> ptr = ....;
+      SomeData *ptr2 = ptr.get();
+  }  // delete;
+  ```
+* Можно вытащить владение указателя для совместимости:
+  ```c++
+  {
+      std::unique_ptr<SomeData> ptr = ....;
+      SomeData *ptr2 = ptr.release();
+  }  // утечка
+  ```
+
+---
+## Умные указатели: `shared_ptr`
+* Владельцев несколько и никак не сделать одного:
+  ```c++
+  class Window1 {
+      std::shared_ptr<SuperImportantData> data;
+  };
+  class Window2 {
+      std::shared_ptr<SuperImportantData> data;
+  };
+  ```
+* Выделит в куче счётчик активных ссылок.
+  Удалит данные, когда тот упадёт до нуля.
+* Сильно дороже `unique_ptr` из-за счётчика и многопоточности.
+* Если создать второй `shared_ptr`, будет новый счётчик:
+  ```c++
+  {
+      shared_ptr<Data> x = ....;
+      shared_ptr<Data> y = x.get();
+  }  // `x`, `y` вызовут `delete`
+  ```
+
+---
+## Умные указатели: `weak_ptr`
+* `shared_ptr` не работает с циклами:
+  ```c++
+  class SuperImportantData {
+      std::vector<std::shared_ptr<SuperImportantData>> children;
+      std::shared_ptr<SuperImportantData> parent;  // Упс, цикл.
+  };
+  ```
+* Для разрыва циклов можно делать ссылки наверх через `std::weak_ptr`:
+  ```c++
+  class SuperImportantData {
+      std::vector<std::shared_ptr<SuperImportantData>> children;
+      std::weak_ptr<SuperImportantData> parent;
+  };
+  ```
+* Чтобы использовать `weak_ptr`, надо его преобразовать в `shared_ptr`
+  (потому что многопоточность).
+* `weak_ptr` автоматически обнулится при удалении родителя.
+
+`shared_ptr`/`weak_ptr` используется очень редко, обычно владелец один.
+
+---
+## Чистые указатели
+* Совместимость с Си (лучше сразу обернуть в RAII или умный указатель).
+* Ссылаемся на объект, который точно нас переживёт:
+  ```
+  struct SearchTreeNode {
+      std::unique_ptr<SearchTreeNode> left, right;
+      SearchTreeNode *parent;
+      int key; string value;
+  };
+  ```
+* Пишем свой умный указатель
+
+---
+## Создание умных указателей
+Всегда используйте `make_unique`, не пишите `new`:
+```c++
+foo(unique_ptr<Foo>(new Foo), unique_ptr<Bar>(new Bar));
+```
+До C++17 компилятор мог сначала выполнить все `new`, а потом все конструкторы.
+Это утечка, если один из `new` бросал.
+
+Лучше так:
+```c++
+foo(make_unique<Foo>(), make_unique<Bar>());
+```
+.
+## Наследование
+```c++
+unique_ptr<Derived> d = ....;
+unique_ptr<Base> b = d;
+```
+
+---
+## Алгоритмы
+Лучше всегда использовать алгоритмы или range-based-for.
+
+До:
+```c++
+vector<int> values;
+for (size_t i = 0; i < values.size(); ++i) {
+    if (values[i] % 2 == 0) {
+        values.erase(values.begin() + i);
+        --i;
+    }
+}
+```
+
+После (меньше шансов забыть индексы или что угодно):
+```c++
+values.erase(std::remove_if(values.begin(), values.end(), [](int v) {
+    return v % 2 == 0;
+}), values.end());
+```
+
+А ещё в C++20 появились Ranges.
+
+---
+## Многопоточность
+Есть те же самые mutex, conditional variables...
+
+```c++
+std::atomic<int> atomicInt;
+std::unordered_set<int> values;
+std::mutex m;
+void add(int value) {
+    ++atomicInt;  // Операции гарантированно атомарны.
+    std::lock_guard g(m);  // Взяли mutex и держим до деструктора.
+    values.insert(value);
+}
+```
+
+Осторожно: помните про имя у `lock_guard`: `std::lock_guard(m);`
+
+## Прочее
+* `std::chrono`
+* `std::filesystem`
+* `std::random`

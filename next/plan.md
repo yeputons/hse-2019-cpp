@@ -4,6 +4,7 @@ list-initialization (uniform initialization syntax).
 Приватное наследование нужно для, например, boost::noncopyable.
 Или какого-нибудь другого свойства, которое требуется всем экземплярам класса.
 
+make_shared ещё и меньше выделений памяти делает и работает быстрее.
 span/string_view
 
 `noexcept(...)`

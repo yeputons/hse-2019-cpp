@@ -1,0 +1,9 @@
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+
+int main() {
+    int a[5] = {2, -4, 3, 5, 1};
+    // Увеличьте все элементы массива на единицу и выведите на экран.
+    TODO
+}

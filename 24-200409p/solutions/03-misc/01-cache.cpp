@@ -5,14 +5,25 @@
 #include <unordered_set>
 #include <mutex>
 
+// "Кэширующая фабрика".
+// При запросе элемента создаёт его при помощи функтора Factory, запоминает
+// внутри себя и возвращает умный указатель на этот элемент.
+// При последующих запросах возвращается тот же элемент.
+// Если в какой-то момент элемент внутри оказался ненужным (т.е. на него
+// перестали ссылаться умные указатели снаружи фабрики), то он удаляется.
+// В следующий раз будет пересоздан заново.
+//
+// Гарантируется, что методы `CachingFactory` вызываются потокобезопасно.
+// Однако объекты могут удаляться в других потоках в любой момент, в том
+// числе одновременно с использованием `CachingFactory`.
 template<typename Key, typename T, typename Factory>
 struct CachingFactory {
     CachingFactory(Factory f_) : f(f_) {}
 
+    // START SOLUTION
     std::shared_ptr<T> operator[](const Key &key) {
         std::shared_ptr<T> result;
 
-        std::lock_guard g(m);
         auto it = data.find(key);
         if (it != data.end() && it->first == key) {
             result = it->second.lock();
@@ -26,11 +37,13 @@ struct CachingFactory {
         }
         return result;
     }
+    // END SOLUTION
 
 private:
     Factory f;
-    std::mutex m;
+    // START SOLUTION
     std::unordered_map<Key, std::weak_ptr<T>> data;
+    // END SOLUTION
 };
 
 int main() {

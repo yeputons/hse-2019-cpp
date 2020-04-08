@@ -4,14 +4,16 @@
 #include <iterator>
 #include <random>
 
+using namespace std;
+
 int main() {
     int a[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     // Передвиньте чётные элементы массива `a` в начало, а нечётные — в конец.
     // Выведите чётные элементы на одной строчке, а нечётные — на следующей.
     // Разрешается вывести лишний пробел в конце каждой строки.
-    auto mid = std::partition(std::begin(a), std::end(a), [](int x) { return x % 2 == 0; });
-    std::copy(std::begin(a), mid, std::ostream_iterator<int>(std::cout, " "));
-    std::cout << "\n";
-    std::copy(mid, std::end(a), std::ostream_iterator<int>(std::cout, " "));
-    std::cout << "\n";
+    auto mid = partition(begin(a), end(a), [](int x) { return x % 2 == 0; });
+    copy(begin(a), mid, ostream_iterator<int>(cout, " "));
+    cout << "\n";
+    copy(mid, end(a), ostream_iterator<int>(cout, " "));
+    cout << "\n";
 }

@@ -4,8 +4,10 @@
 #include <iterator>
 #include <random>
 
+using namespace std;
+
 int main() {
-    std::vector<int> a = {2, 3, 3, 1};
+    vector<int> a = {2, 3, 3, 1};
     // Выведите сумму квадратов элементов `a`.
-    std::cout << std::accumulate(std::begin(a), std::end(a), 0, [](int acc, int x) { return acc + x * x; }) << "\n";
+    cout << accumulate(begin(a), end(a), 0, [](int acc, int x) { return acc + x * x; }) << "\n";
 }

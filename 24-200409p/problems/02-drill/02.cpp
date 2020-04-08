@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cassert>
 
+using namespace std;
+
 int main() {
     int a[] = {1, 6, 2, 6, 7, 9, 4};
     int c[] = {36, 49, 81};

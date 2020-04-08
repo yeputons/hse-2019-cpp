@@ -4,8 +4,10 @@
 #include <vector>
 #include <string>
 
+using namespace std;
+
 int main() {
-    std::vector<std::string> strs;
+    vector<string> strs;
     // Считайте из cin несколько строчек, отсортируйте, выведите в cout на разных строках.
     TODO
 }

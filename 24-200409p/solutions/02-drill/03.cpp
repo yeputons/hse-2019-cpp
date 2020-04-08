@@ -2,9 +2,11 @@
 #include <iostream>
 #include <iterator>
 
+using namespace std;
+
 int main() {
     int a[5] = {2, -4, 3, 5, 1};
     // Увеличьте все элементы массива на единицу и выведите на экран.
-    std::for_each(std::begin(a), std::end(a), [](int &x) { x += 1; });
-    std::copy(std::begin(a), std::end(a), std::ostream_iterator<int>(std::cout, "\n"));
+    for_each(begin(a), end(a), [](int &x) { x += 1; });
+    copy(begin(a), end(a), ostream_iterator<int>(cout, "\n"));
 }

@@ -1,18 +1,7 @@
-list-initialization (uniform initialization syntax).
-
 # Долги
-Приватное наследование нужно для, например, boost::noncopyable.
-Или какого-нибудь другого свойства, которое требуется всем экземплярам класса.
-
-make_shared ещё и меньше выделений памяти делает и работает быстрее.
-span/string_view
 
 `noexcept(...)`
 Функция `noexcept()` вроде `sizeof`/`alignof`.
-Можно использовать `new char[]` вместо `aligned_alloc` и оно будет адекватно работать для почти всех типов: https://stackoverflow.com/a/10588226
-
-Можно писать uninitialized_copy
-Можно писать move_if_noexcept (или это в метапрограммирование?)
 
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 

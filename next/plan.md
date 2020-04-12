@@ -188,3 +188,5 @@ https://en.cppreference.com/w/cpp/language/adl
 # Ещё дальше
 * C++ позволяет специализировать и инстанциировать шаблоны от приватных типов, а оттуда `friend`'ом вытащить, тогда не будет ошибки "тип приватный" (только практики?): https://godbolt.org/z/hH9H27
 * Stateful metaprogramming (только практики?): https://stackoverflow.com/questions/44267673/is-stateful-metaprogramming-ill-formed-yet
+* определения инлайнов должны совпадать с точностью до токена
+* precompiled header

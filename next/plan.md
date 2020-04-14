@@ -3,6 +3,14 @@
 `noexcept(...)`
 Функция `noexcept()` вроде `sizeof`/`alignof`.
 
+* User defined literal
+  * Пример с секундами и минутами
+  * Свой `operator""`
+* `std::tuple<>`, `tuple_size<>`, `get<>`
+* Structured binding
+* If statement declaration: пример с `find` и `dynamic_cast`
+* `dynamic_cast` с diamond и multiple bases.
+
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Правила вывода типов [00:20]

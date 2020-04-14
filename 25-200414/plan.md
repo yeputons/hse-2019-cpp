@@ -27,12 +27,6 @@
   * Автовывод возвращаемого значения лямбды как в `T`.
   * Автовывод в `auto` переменных и lambda init capture как в шаблонах с тонкостью (не надо писать braced-init-list, он разный в C++14, C++17, см. лекцию).
   * ЗАБИТЬ: Автовывод в lambda capture: как `T&/T*` с тонкостью.
-* User defined literal
-  * Пример с секундами и минутами
-  * Свой `operator""`
-* `std::tuple<>`, `tuple_size<>`, `get<>`
-* Structured binding
-* If statement declaration: пример с `find`
 
 # Касты [00:15]
 * `static_cast`

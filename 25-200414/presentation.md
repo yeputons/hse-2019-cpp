@@ -160,7 +160,7 @@ struct Foo {
     int x;  // default initialization
     int y{};  // value initialization
     int z;
-    Foo() : z() /* default initialization */ {}
+    Foo() : z() /* value initialization */ {}
 };
 int main() {
     Foo f;  // default initialization
@@ -312,7 +312,7 @@ struct Foo {
 };
 pair<int, float> p;  // default initialization
 Foo f = {            // std::initialize_list
-  {1, 2.0f},      // aggregate initialization
+  {1, 2.0f},      // direct initialization
   pair(1, 2.0f),  // direct initialization
   p               // copy initialization
 };
@@ -373,7 +373,7 @@ struct Foo { Foo() { cout << "Foo();\n"; } };
    Point p1 = {1, 2}; // copy list initialization, aggregate initialization
    Point p2 = p1; // copy initialization
    Point p3 = {p1};  // copy list initialization, copy initialization
-   char arr[] = {'a', 'b'};  // copy list initialization, массив символов
+   char arr[] = {"ab"};  // copy list initialization, массив символов
    ```
 * Если список пуст и есть конструктор по умолчанию, то value initialization.
    ```c++
@@ -409,8 +409,9 @@ struct Foo { Foo() { cout << "Foo();\n"; } };
 * Иногда поведение отличается от круглых: они более строгие и могут вызывать
   `std::initializer_list` 
   * Круглые в C++20 тоже могут, но с другим приоритетом.
-  * Гарантируется порядок вычисления элементов в фигурных скобках: слева направо.
-    В круглых не гарантируется, как и в вызовах функций.
+  * Гарантируется порядок вычисления элементов в фигурных скобках: слева направо:
+    `Point foo{readInt(), readInt()};`.
+  * В круглых не гарантируется, как и в вызовах функций:
 * Так как типа у `{}` нет, то весело с перегрузками и надо использовать только там,
   где вы уверены про тип.
 
@@ -457,13 +458,13 @@ printAll(vector<int>{10, 20});
 Забили на то, что `EXPR` — ссылка, сделали pattern matching:
 ```c++
 template<typename T> void f(T&);
-int x = 10;        f(x);  // T = int, PARAM=int&
-const int cx = 20; f(x);  // T = const int, PARAM=const int&
-int &rx = x;       f(x);  // T = int, PARAM=int&
+int x = 10;        f(x);   // T = int, PARAM=int&
+const int cx = 20; f(cx);  // T = const int, PARAM=const int&
+int &rx = x;       f(rx);  // T = int, PARAM=int&
 template<typename T> void g(const T&);
 g(x);  // T = int, PARAM=const int&
 ```
-T никогда не ссылка.
+PARAM никогда не ссылка.
 
 #### Вывод типа в `auto`
 Считаем, что `auto` — шаблонный параметр:
@@ -492,7 +493,7 @@ template<typename T> void g(Foo<T>);
 const Foo<const int> v;   g(v);  // T = const int, PARAM = Foo<const Int>
 ```
 
-При этом `T` никогда не может быть ссылкой или константой.
+При этом `PARAM` никогда не может быть ссылкой или константой.
 
 В `auto` получаем всегда копию:
 
@@ -513,6 +514,8 @@ auto arvec = rvec;  // auto = vector<int>
   auto  foo(int x) { return x; }   // auto=int
   auto  foo(int &x) { return x; }  // auto=int
   auto& foo(int &x) { return x; }  // auto=int, auto&=int&
+  auto  foo(const int &x) { return x; }  // auto=int, retval=int
+  auto& foo(const int &x) { return x; }  // auto=const int, auto&=const int&
   ```
 * Функция смотрит на первый `return`, а дальше в точности сойтись:
   ```c++
@@ -532,9 +535,10 @@ auto arvec = rvec;  // auto = vector<int>
 
 ---
 ### Другие применения вывода типов и `auto`
-* В инициализации в лямбдах (но не в захвате):
+* В инициализации и возвращаемом типе в лямбдах (но не в захвате):
   ```c++
   [foo = vector<int>(10)]() {}  // auto=vector<int>
+  []() -> double { return 10; }
   ```
 * `auto` зачем-то может выводить тип в `std::initializer_list` (не надо):
   ```c++
@@ -546,7 +550,7 @@ auto arvec = rvec;  // auto = vector<int>
       using Bar = int;
       Bar foo();
   };
-  // Foo::Bar foo() { .. }
+  // Foo::Bar Foo::foo() { .. }
   auto Foo::foo() -> Bar { .. }
   ```
   * Можно смотреть внутрь `Foo::`

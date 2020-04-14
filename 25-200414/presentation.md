@@ -429,3 +429,125 @@ foo({20, "xxx"});
 vector<int> v(4);  // 0 0 0 0
 Point p(10, 20);
 ```
+
+---
+<!-- язык: мутабельные лямбды (были на практике) -->
+## Как работает вывод типов в шаблонах
+Есть лекция Скотта Мейерса ["Type Deduction and Why You Care"](https://www.youtube.com/watch?v=wQxj20X-tIU).
+
+```c++
+template<typename T>
+void f(PARAM param);
+f(EXPR);
+```
+
+Надо вывести: что такое `T`, что такое `PARAM`.
+
+Они могут отличаться:
+
+```c++
+template<typename T> void printAll(const vector<T>&);
+printAll(vector<int>{10, 20});
+```
+
+Здесь `PARAM=const vector<int>&`, `T=int`.
+
+---
+### `PARAM` — ссылка или указатель
+Забили на то, что `EXPR` — ссылка, сделали pattern matching:
+```c++
+template<typename T> void f(T&);
+int x = 10;        f(x);  // T = int, PARAM=int&
+const int cx = 20; f(x);  // T = const int, PARAM=const int&
+int &rx = x;       f(x);  // T = int, PARAM=int&
+template<typename T> void g(const T&);
+g(x);  // T = int, PARAM=const int&
+```
+T никогда не ссылка.
+
+#### Вывод типа в `auto`
+Считаем, что `auto` — шаблонный параметр:
+
+```c++
+int x = 10;
+const int cx = 20;
+int &rx = x;
+auto &arx1 = x;        // auto = int, auto& = int&
+*auto &arx2 = cx;       // auto = const int, auto& = const int&
+const auto &acx = rx;  // auto = int, const auto& = const int&
+```
+
+---
+### `PARAM` — не ссылка и не указатель
+1. Как и раньше, отбросили ссылку у `EXPR`.
+2. Отбросили `const` и `volatile` у `EXPR`.
+3. То, что осталось — pattern matching с `PARAM`.
+
+```c++
+template<typename T> void f(T);
+int x = 10;         f(x);  // T = PARAM = int
+*const int cx = 20; f(x);  // T = PARAM = int
+int &rx = x;        f(x);  // T = PARAM = int
+template<typename T> void g(Foo<T>);
+const Foo<const int> v;   g(v);  // T = const int, PARAM = Foo<const Int>
+```
+
+При этом `T` никогда не может быть ссылкой или константой.
+
+В `auto` получаем всегда копию:
+
+```c++
+vector<int> vec = {1, 2, 3, 4};
+const vector<int> cvec = vec;
+const vector<int> &rvec = vec;
+auto avec = vec;    // auto = vector<int>
+auto acvec = cvec;  // auto = vector<int>
+auto arvec = rvec;  // auto = vector<int>
+```
+
+---
+### Вывод возвращаемого типа функции
+* Возвращаемое значение лямбды и функции:
+  ```c++
+  auto lambda = [](int x) { return x; }  // T=int, retval=int
+  auto  foo(int x) { return x; }   // auto=int
+  auto  foo(int &x) { return x; }  // auto=int
+  auto& foo(int &x) { return x; }  // auto=int, auto&=int&
+  ```
+* Функция смотрит на первый `return`, а дальше в точности сойтись:
+  ```c++
+  auto fac1(int n) { // Окей
+      if (n == 1) return 1;
+      else        return n * fac1(n - 1);
+  }
+  auto fac2(int n) { // Ошибка компиляции
+      if (n > 1) return n * fac2(n - 1);
+      else       return 1;
+  }
+  auto foo() {
+      return 1;
+      return 1.0;  // Не сошлось, ошибка компиляции.
+  }
+  ```
+
+---
+### Другие применения вывода типов и `auto`
+* В инициализации в лямбдах (но не в захвате):
+  ```c++
+  [foo = vector<int>(10)]() {}  // auto=vector<int>
+  ```
+* `auto` зачем-то может выводить тип в `std::initializer_list` (не надо):
+  ```c++
+  auto x = {1, 2, 3};
+  ```
+* Можно писать возвращаемый тип в конце сигнатуры:
+  ```c++
+  struct Foo {
+      using Bar = int;
+      Bar foo();
+  };
+  // Foo::Bar foo() { .. }
+  auto Foo::foo() -> Bar { .. }
+  ```
+  * Можно смотреть внутрь `Foo::`
+  * Можно смотреть на параметры при помощи `decltype()` и других...

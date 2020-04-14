@@ -551,3 +551,111 @@ auto arvec = rvec;  // auto = vector<int>
   ```
   * Можно смотреть внутрь `Foo::`
   * Можно смотреть на параметры при помощи `decltype()` и других...
+
+---
+## `static_cast<Foo>(expr)`
+<!--
+В C++ преобразования типов разделены на виды.
+Для каждого вида есть специальный синтаксис, чтобы при чтении кода
+было заметно, где происходит что-то страшное.
+-->
+
+* Ваш друг по умолчанию: неявные плюс "точно обратные" к неявным преобразованиям.
+* Неявная конвертация к `Foo` (без `explicit`).
+* Для ссылок и указателей: basecast (неявно тоже можно), derivedcast (без проверок):
+  ```c++
+  struct Base1 { int x; };
+  struct Base2 { int y; };
+  struct Derived : Base1, Base2 {};
+  Derived *d = new Derived;
+  Base1 *b1 = d;
+  Base2 *b2 = d;
+  Derived *d1 = static_cast<Derived*>(b1);  // Верно не изменит указатель.
+  Derived *d2 = static_cast<Derived*>(b2);  // Верно изменит указатель.
+  ```
+* Преобразования между числами, в том числе с потерей точности.
+* Преобразования от/к `void*`. Гарантируется, что значение указателя такое же.
+* `static_cast<void>(foo);` — отключить предупреждение "`foo` не используется".
+
+---
+## `reinterpret_cast<Foo>(expr)`
+
+* Делает что-то страшное: просто меняет тип `expr`.
+  * Никогда не компилируется в команды процессора.
+* Конвертирует указатели в числа и обратно (если места хватает).
+* Конвертирует указатели/ссылки в любые другие
+  * Значение от промежуточных конвертаций может быть любое, отличается от `static_cast<void*>`.
+  * Можно получить UB от strict aliasing rule.
+* В нормальном коде на C++ нужен [редко](https://stackoverflow.com/questions/573294/when-to-use-reinterpret-cast).
+
+```c++
+int *a = new int();
+void *b = reinterpret_cast<void*>(a);  // Значение неизвестно!
+int *c = reinterpret_cast<int*>(b);  // a == c
+float *d = reinterpret_cast<float*>(a);
+cout << *d; // UB: нарушение strict aliasing: доступ к
+            // объекту типа int через несовместимый float*.
+char *e = reinterpret_cast<char*>(a):
+cout << *e; // Не UB: любой объект можно читать через char* или 
+            // unsigned char* (но не signed char*).
+```
+
+---
+## `const_cast<Foo>(expr)`
+* Делает что-то страшное: отбрасывает константность у `expr`.
+* UB, если `expr` на самом деле константный объект.
+  ```c++
+  vector<int> vec;
+  const auto &rvec = vec;
+  const vector<int> cvec;
+  const_cast<vector<int>&>(rvec).clear();  // Окей
+  const_cast<vector<int>&>(cvec).clear();  // UB
+  ```
+* Можно использовать в своём `operator[]`:
+  ```c++
+  const T& operator[](size_t i) const { .. }
+  T& operator[](size_t i) {
+      return const_cast<T&>(static_cast<const vector<T>&>(*this)[i]);
+  }
+  ```
+* Иногда нужен для совместимости с древним Си без `const`:
+  ```c++
+  void println(char *s);
+  println(const_cast<char*>("foo"));
+  ```
+
+---
+## C-style cast
+Синтаксис: `(int)10.5` и похожие `(T)expr`.
+
+* Пробует по очереди:
+  * `const_cast`
+  * `static_cast` и разрешает ещё пару преобразований
+  * `reinterpret_cast`
+  * На каждый вариант пытается ещё навесить `const_cast`
+* Не надо использовать никогда.
+* Практически всегда можно `static_cast` или вызвать конструктор.
+
+---
+## `dynamic_cast`
+* Для работы с полиформными объектами.
+  * Объект полиморофен, если есть хотя бы одна виртуальная функция (обычно хотя бы деструктор).
+  * Доступ по указателям или ссылкам (например, `vector<unique_ptr<Figure>>`).
+* Позволяет проверить динамический тип объекта во время выполнения.
+
+```c++
+struct Base { virtual ~Base(); };
+struct Foo : Base {};
+struct Bar : Base {};
+struct Derived : Foo, Bar {};
+
+Foo *f = ..;
+Base *b = f;  // Неявное преобразование (basecast), всегда верно.
+Derived *d1 = static_cast<Derived*>(f);  // Derivedcast, иногда UB.
+Derived *d2 = dynamic_cast<Derived*>(f);  // Derivedcast, иногда nullptr.
+Bar *bar = dynamic_cast<Bar*>(f);  // Crosscast, иногда nullptr, нельзя static.
+
+Foo &rf = f;
+Derived &rd1 = static_cast<Derived&>(rf);  // Иногда UB.
+Derived &rd2 = dynamic_cast<Derived&>(rf);  // Иногда исключение std::bad_cast.
+```

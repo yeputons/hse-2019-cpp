@@ -5,6 +5,7 @@
 
 * User defined literal
   * Пример с секундами и минутами
+  * Пример со `vector{"foo"sv}`
   * Свой `operator""`
 * `std::tuple<>`, `tuple_size<>`, `get<>`
 * Structured binding

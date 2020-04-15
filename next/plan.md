@@ -3,6 +3,8 @@
 `noexcept(...)`
 Функция `noexcept()` вроде `sizeof`/`alignof`.
 
+Конструктор `std::initializer_list<int> = {}` не работает как initializer list. Надо отдельно писать.
+
 * User defined literal
   * Пример с секундами и минутами
   * Пример со `vector{"foo"sv}`

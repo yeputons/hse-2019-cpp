@@ -12,7 +12,7 @@
 * `std::tuple<>`, `tuple_size<>`, `get<>`
 * Structured binding
 * If statement declaration: пример с `find` и `dynamic_cast`
-* `dynamic_cast` с diamond и multiple bases.
+* `dynamic_pointer_cast`.
 
 # Метапрограммирование
 1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать

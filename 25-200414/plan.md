@@ -18,7 +18,6 @@
 * Чем рекомендуется инициализировать. The most vexing parse.
 
 # Язык [00:20]
-* Лямбды: мутабельные, `static` внутри
 * `auto`: пять применений
   * https://www.youtube.com/watch?v=wQxj20X-tIU
   * Автовывод в шаблонах: `T`, `T&/T*`, как влияет `const`/`volatile`.
@@ -32,9 +31,8 @@
 * `static_cast`
 * `const_cast`
 * `reinterpret_cast`
+  * strict aliasing rule
 * `dynamic_cast`
   * По ссылке и по указателю, исключения.
-  * Diamond
   * Cross-cast
-  * If statement declaration.
 * C-style cast, когда какой каст использовать

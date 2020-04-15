@@ -36,7 +36,7 @@ int main() {
         assert(s.str() == "101112");
     }
     {
-        Printer<Counter> p(Counter());
+        Printer<Counter> p{Counter{}};
         std::stringstream s;
         s << p << p << p;
         std::cout << "Test 2: '" << s.str() << "'" << std::endl;

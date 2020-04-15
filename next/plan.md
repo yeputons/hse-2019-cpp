@@ -11,6 +11,18 @@
 * If statement declaration: пример с `find` и `dynamic_cast`
 * `dynamic_cast` с diamond и multiple bases.
 
+# Метапрограммирование
+1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать
+2. если мы делаем свой sfinae detector, то осторожно с ADL при его вызове.
+3. enable_if + шаблонный параметр класса, а не метода: надо вводить фиктивные параметры.
+4. шаблонные параметры конструктора не указать явно?
+5. explicit constructor с нулём параметров (default)? С двумя?
+6. SFINAE не детектит ошибки инстанцирования. Сразу проблемы с is_default_constructible<pair<>>, если pair реализован с наивным конструктором по умолчанию без SFINAE.
+7. Нельзя шаблонизировать конструкторы/операторы копирования/присваивания. НО КАК РАБОТАЕТ SWAP TRICK. ЧИТАТЬ СТАНДАРТ. Видимо, надо ооочень аккуратно смотреть на user-defined/user-declared/implicitly defined-deleted, whatever.
+8. https://habr.com/ru/company/jugru/blog/467299/
+    подключение special memberes через наследование.
+9. std::ref/std::cref/std::reference_wrapper, чтобы показать, как передавать какие параметры. Но зачем? Чтобы везде по значению?
+
 ## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Правила вывода типов [00:20]

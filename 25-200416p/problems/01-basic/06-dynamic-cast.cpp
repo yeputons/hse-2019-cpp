@@ -50,6 +50,7 @@ int main() {
     std::stringstream out;
 
     // START SOLUTION
+    TODO
     // END SOLUTION
 
     assert(out.str() ==

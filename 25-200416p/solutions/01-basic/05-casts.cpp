@@ -19,24 +19,16 @@ void legacy_foo(char *s) {
 
 int main() {
     {
-        auto p3 = static_cast<Point3D*>(std::malloc(sizeof(Point3D)));
-        auto p2 = p3;
+        Point3D *p3 = static_cast<Point3D*>(std::malloc(sizeof(Point3D)));
+        Point2D *p2 = p3;
         p2->x = static_cast<int>((2 + 3) / 2);
         p2->y = 20;
         foo(static_cast<Point3D*>(p3));
         std::free(p3);
     }
     {
-        auto p3 = reinterpret_cast<Point3D*>(new char[sizeof(Point3D)]);
-        auto p2 = p3;
-        p2->x = static_cast<int>((2 + 3) / 2);
-        p2->y = 20;
-        foo(static_cast<Point3D*>(p3));
-        delete[] reinterpret_cast<char*>(p3);
-    }
-    {
-        auto p3 = reinterpret_cast<Point3D*>(new char[sizeof(Point3D)]);
-        auto p2 = p3;
+        Point3D *p3 = reinterpret_cast<Point3D*>(new char[sizeof(Point3D)]);
+        Point2D *p2 = p3;
         p2->x = static_cast<int>((2 + 3) / 2);
         p2->y = 20;
         foo(static_cast<Point3D*>(p3));

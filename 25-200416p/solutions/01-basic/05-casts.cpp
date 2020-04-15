@@ -3,6 +3,7 @@
 #include <iostream>
 
 #pragma GCC diagnostic error "-Wwrite-strings"
+#pragma GCC diagnostic error "-Wold-style-cast"
 
 struct Point2D { double x, y; };
 struct Point3D : Point2D { double z; };

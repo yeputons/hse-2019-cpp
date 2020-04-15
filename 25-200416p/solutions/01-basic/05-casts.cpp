@@ -1,9 +1,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
-
-#pragma GCC diagnostic error "-Wwrite-strings"
-#pragma GCC diagnostic error "-Wold-style-cast"
+#include <vector>
 
 struct Point2D { double x, y; };
 struct Point3D : Point2D { double z; };
@@ -17,6 +15,18 @@ void legacy_foo(char *s) {
     assert(s[1] == 'i');
     assert(s[2] == 0);
 }
+
+struct some_opaque_user_data;
+some_opaque_user_data* c_api_call(some_opaque_user_data *data) {
+    char *ptr = (char*)data;
+    // Do some magic with the pointer, but do not touch the data inside.
+    ptr += 10;
+    ptr -= 10;
+    return (some_opaque_user_data*)ptr;
+}
+
+#pragma GCC diagnostic error "-Wwrite-strings"
+#pragma GCC diagnostic error "-Wold-style-cast"
 
 int main() {
     // START SOLUTION
@@ -50,6 +60,21 @@ int main() {
     {
         const char *s = "hi";
         legacy_foo(const_cast<char*>(s));
+    }
+    {
+        using veci = std::vector<int>;
+        const veci vec{1, 2, 3};
+        const veci *pvec =
+            reinterpret_cast<const veci*>(
+                c_api_call(
+                    reinterpret_cast<some_opaque_user_data*>(const_cast<veci*>(&vec))
+                )
+            );
+        assert(pvec->size() == 3);
+        assert(pvec->at(0) == 1);
+        assert(pvec->at(1) == 2);
+        assert(pvec->at(2) == 3);
+        assert(vec == *pvec);
     }
     // END SOLUTION
     std::cout << "PASSED\n";

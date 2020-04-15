@@ -51,9 +51,11 @@ private:
 };
 
 struct ExpressionBuilder {
+    // START SOLUTION
     ExpressionBuilder(int value) : expr(make_unique<Const>(value)) {}
     ExpressionBuilder(ExpressionBuilder left, BinaryExpression::Operation op, ExpressionBuilder right)
         : expr(make_unique<BinaryExpression>(move(left).build(), op, move(right).build())) {}
+    // END SOLUTION
 
     unique_ptr<Expression> build() && {
         return move(expr);

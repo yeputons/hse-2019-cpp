@@ -49,6 +49,7 @@ int main() {
 
     std::stringstream out;
 
+    // START SOLUTION
     for (const auto &fig : figures) {
         if (auto rect = dynamic_cast<Rect*>(fig.get()); rect) {
             out << "Rect(" << rect->width << ", " << rect->height << ")\n";
@@ -56,6 +57,7 @@ int main() {
             out << "Non-Rect\n";
         }
     }
+    // END SOLUTION
 
     assert(out.str() ==
         "Non-Rect\n"

@@ -3,9 +3,10 @@
 
 struct Point {
     int x, y;
-
+    // START SOLUTION
     Point() : x(0), y(0) {}
     Point(int x_, int y_) : x(x_), y(y_) {}
+    // END SOLUTION
 };
 
 int main() {

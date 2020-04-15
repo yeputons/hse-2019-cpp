@@ -12,12 +12,14 @@ using std::unique;
 
 template<typename T>
 struct sort_unique_vector {
+    // START SOLUTION: create constructors
     sort_unique_vector() {}
 
     explicit sort_unique_vector(initializer_list<T> data_) : data(data_) {  // Direct initialization. No move needed for light initializer_list<>.
         sort(data.begin(), data.end());
         data.erase(unique(data.begin(), data.end()), data.end());
     }
+    // END SOLUTION
 
     auto begin() const { return data.cbegin(); }
     auto end() const { return data.cend(); }

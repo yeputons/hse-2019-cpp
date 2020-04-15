@@ -71,6 +71,7 @@ private:
 struct PrintVisitor : ExpressionVisitor {
     using ExpressionVisitor::operator();  // Make non-virtual operator visible.
 
+    // START SOLUTION
     void operator()(const Const &c) {
         result << c.value();
     }
@@ -88,6 +89,7 @@ struct PrintVisitor : ExpressionVisitor {
         (*this)(b.right());
         result << ')';
     }
+    // END SOLUTION
 
     auto str() const {
         return result.str();

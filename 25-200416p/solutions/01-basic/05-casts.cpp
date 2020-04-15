@@ -19,6 +19,7 @@ void legacy_foo(char *s) {
 }
 
 int main() {
+    // START SOLUTION
     {
         Point3D *p3 = static_cast<Point3D*>(std::malloc(sizeof(Point3D)));
         Point2D *p2 = p3;
@@ -50,5 +51,6 @@ int main() {
         const char *s = "hi";
         legacy_foo(const_cast<char*>(s));
     }
+    // END SOLUTION
     std::cout << "PASSED\n";
 }

@@ -7,6 +7,7 @@
 using std::string_view;
 using std::vector;
 
+// START SOLUTION: implement split()
 vector<string_view> split(string_view str, string_view sep = " ") {
     vector<string_view> result;
     while (true) {
@@ -17,6 +18,7 @@ vector<string_view> split(string_view str, string_view sep = " ") {
     }
     return result;
 }
+// END SOLUTION
 
 int main() {
     using std::string;

@@ -1,19 +1,5 @@
 # Долги
 
-`noexcept(...)`
-Функция `noexcept()` вроде `sizeof`/`alignof`.
-
-Конструктор `std::initializer_list<int> = {}` не работает как initializer list. Надо отдельно писать.
-
-* User defined literal
-  * Пример с секундами и минутами
-  * Пример со `vector{"foo"sv}`
-  * Свой `operator""`
-* `std::tuple<>`, `tuple_size<>`, `get<>`
-* Structured binding
-* If statement declaration: пример с `find` и `dynamic_cast`
-* `dynamic_pointer_cast`.
-
 # Метапрограммирование
 1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать
 2. если мы делаем свой sfinae detector, то осторожно с ADL при его вызове.
@@ -25,8 +11,6 @@
 8. https://habr.com/ru/company/jugru/blog/467299/
     подключение special memberes через наследование.
 9. std::ref/std::cref/std::reference_wrapper, чтобы показать, как передавать какие параметры. Но зачем? Чтобы везде по значению?
-
-## Опционально: perfect forwarding и forwarding-ссылки [00:20]
 
 # Правила вывода типов [00:20]
 ## Где случается [00:07]
@@ -201,15 +185,7 @@ auto v4 = d;  // T=const int*, ТИП=const int*
   это дополнительное ограничения компилятору: вычисли на этапе компиляции.
 * В противном случае честно объявляете в `.h` и определяете в `.cpp`.
 
-## ADL
-Вызов конструктора не находится через ADL (и слава богу, теперь namespace no_adl работает).
-friend namespace injection в стандартном C++ нет
-https://en.cppreference.com/w/cpp/language/adl
-Для `operator<<`
-Для `swap`: https://stackoverflow.com/a/5695855
-`namespace internal` для отключения случайного ADL
 # Ещё дальше
-* C++ позволяет специализировать и инстанциировать шаблоны от приватных типов, а оттуда `friend`'ом вытащить, тогда не будет ошибки "тип приватный" (только практики?): https://godbolt.org/z/hH9H27
 * Stateful metaprogramming (только практики?): https://stackoverflow.com/questions/44267673/is-stateful-metaprogramming-ill-formed-yet
 * определения инлайнов должны совпадать с точностью до токена
 * precompiled header

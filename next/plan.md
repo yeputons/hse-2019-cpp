@@ -1,4 +1,6 @@
 # Долги
+Шаблонные друзья: https://blog.panicsoftware.com/friends-and-where-to-find-them/
+thread_local переменные
 
 # Метапрограммирование
 1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать
@@ -186,5 +188,11 @@ auto v4 = d;  // T=const int*, ТИП=const int*
 
 # Ещё дальше
 * Stateful metaprogramming (только практики?): https://stackoverflow.com/questions/44267673/is-stateful-metaprogramming-ill-formed-yet
-* определения инлайнов должны совпадать с точностью до токена
 * precompiled header
+* Кого читать про C++:
+  * ISO C++ FAQ
+  * CoreCppGuidelines
+  * GotW (Herb Sutter)
+  * Andrei Alexandrescu
+  * Scott Meyers
+  * TotW (Google)

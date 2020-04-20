@@ -220,3 +220,173 @@ inline constexpr char Name[] = "NAME";
 <!--
 Из `static constexpr` в C++17 следует `inline`, но я рекомендую всё равно писать.
 -->
+
+---
+## 2.1.1. `std::tuple`
+Аналог `std::pair`, но хранит произвольное количество элементов
+(гетерогенный список).
+
+```c++
+std::tuple<int, vector<int>, string> t(10, vector<int>(2), "foo");
+auto t2 = std::make_tuple(10, vector<int>(2), "foo");  // t == t2
+assert(t == t2);
+int a = std::get<0>(t);  // Должна быть константа времени компиляции, циклов нет.
+string c = std::get<2>(t);
+```
+
+Есть неявная конверсия из `pair<>` и `tuple_cat` (пригодится в метапрограммировании):
+```c++
+std::pair<int, string> p(10, "foo");
+std::tuple<int, string> t = p;  // Неявная конверсия pair --> tuple.
+auto tt = std::tuple_cat(t, t);
+```
+Можно узнавать тип элемента и размер на этапе компиляции:
+```c++
+std::tuple_element_t<0, decltype(tt)> x = std::get<0>(tt);
+static_assert(std::tuple_size_v<decltype(tt)> == 4);
+```
+
+---
+## 2.1.2. Интересности с `std::tuple`
+<!-- Можно пропустить -->
+Пригодится нам потом в метапрограммировании:
+```c++
+void foo(int a, string b);
+// ....
+auto t = std::make_tuple(10, "hello");
+std::apply(foo, t);  // foo(10, "hello");
+```
+
+Можно хранить ссылки (в `pair` тоже):
+```c++
+int a = 10; string b = "foo";
+std::tuple<int&, string&> t(a, b);
+t = std::make_tuple(20, "bar");  // a == 20, b == "bar"
+assert(a == 20);
+assert(b == "bar");
+```
+С этим есть эффекты, аккуратно разбирать пока не будем.
+
+Можно почти как в Python:
+```c++
+// std::tuple<int, string> bar() { return {30, "baz"}; }
+std::tie(a, b) = bar();  // a == 30, b == "baz"
+```
+
+---
+## 2.2.1. Structured binding — базовое
+С С++17 можно почти совсем как в Python:
+
+```c++
+std::pair<int, string> p(10, "foo");
+auto [a, b] = p;  // a == 10, b == "foo"
+b += "x";  // b == "foox", p.second == "foo"
+```
+
+К `auto` можно добавлять `const`/`&`/`static`:
+
+```c++
+auto& [a, b] = p;  // a == 10, b == "foo"
+b += "x";  // b == p.second == "foox"
+```
+
+* Есть direct initialization: `auto [a, b](p);`.
+* Есть list initialization: `auto [a, b]{p};`.
+* Указать тип отдельных `a`/`b` нельзя.
+* Нельзя вкладывать: `auto [[a, b], c] = ...`.
+* Нельзя в полях.
+* Происходит на этапе компиляции: можно с массивами, но не с векторами.
+* Также работает с очень простыми структурами.
+
+---
+## 2.2.2. Structured binding — применения
+Удобно получать значения `pair` из `.insert`.
+```c++
+map<int, string> m = ....;
+if (auto [it, inserted] = m.emplace(10, "foo"); inserted) {
+    cout << "Inserted, value is " << it->second << '\n';
+} else {
+    cout << "Already exists, value is " << it->second << '\n';
+}
+```
+
+Удобно итерироваться по `map`.
+```c++
+for (const auto &[key, value] : m) {
+    cout << key << ": " << value << '\n';
+}
+```
+
+---
+## 2.3.1. Как работает
+```c++
+auto [key, value] = *m.begin();
+/*                  ^^^EXPR^^^ */
+```
+превращается в
+```c++
+// 1. Объявляем невидимую переменную ровно так же
+//    Для примера тут copy initialization.
+auto e = *m.begin();  // map<int, string>::value
+                      // pair<const int, string>
+using E = pair<const int, string>;
+// 2. Проверяем количество аргументов.
+static_assert(std::tuple_size_v<E> == 2);
+// 3. Объявляем элементы.
+std::tuple_element_t<0, E> &key   = get<0>(e);  // Или e.get<0>()
+std::tuple_element_t<1, E> &value = get<1>(e);  // Или e.get<1>()
+```
+
+* На самом деле `key` и `value` — ссылки в невидимый `e`.
+* Время жизни такое же, как у `e`.
+* Костантность и ссылочность получаем от `tuple_element_t`.
+  * В частности, `const auto &[a, b] = foo()` продлит жизнь временному
+    объекту.
+
+---
+## 2.3.2. Подробности structured binding
+Поддерживаются три формы привязки:
+
+1. Если массив известного размера:
+   ```c++
+   Foo arr[3];
+   auto [a, b, c] = arr;
+   // превращается в
+   auto e[3] = { arr[0], arr[1], arr[2] };
+   Foo &a = e[0], &b = e[1], &c = e[2];
+   ```
+* Если не массив, то `tuple_size<>`, `get<>`...
+  Можно предоставить свои.
+* Иначе пробуем привязаться ко _всем_ нестатическим полям.
+  ```c++
+  struct Good { int a, b; }
+  struct GoodDerived : Good {};
+  ```
+  ```
+  struct BadPrivate { int a; private: int b; }  // Приватные запрещены.
+  struct BadDerived : Good { int c; }  // Все поля должны быть в одном классе.
+  ```
+
+---
+## 2.3.3. Тонкости structured binding
+* В зависимости от `auto`/`auto&`/`const auto&` и инициализатора у нас получаются немного разные типы.
+  * `auto&` попробует привязать ссылку.
+  * `const auto&` продлит жизнь временному объекту.
+  * `auto` всегда скопирует объект целиком, а не просто его кусочки.
+
+Если внутри объекта лежали ссылки, то может [сломаться время жизни](https://stackoverflow.com/a/51503253/767632):
+```c++
+namespace std {
+    std::pair<const T&, const T&> minmax(const T&, const T&);
+}
+auto [min, max] = minmax(10, 20);  // Только копирование значений?
+// перешло в
+const pair<const int&, const int&> e = {10, 20};
+// Сам `e` — не временный, поэтому продления жизни нет.
+// e.first и e.second ссылаются на уже умершие 10 и 20.
+const int &min = e.first;   // Oops.
+const int &max = e.second;  // Oops.
+```
+
+Рекомендация: осторожно с функциями, которые возвращают ссылки.
+С ними лучше `std::tie`.

@@ -39,7 +39,7 @@ if (auto it = m.find(10); it != s.end()) {
 Аналогично полезно с `.find()` и `dynamic_cast<T*>`, смотри [`25-200416p/problems/01-basic/06-dynamic-cast.cpp`](https://github.com/yeputons/hse-2019-cpp/blob/26daebb971d2c5b6f8f995e7aa40fdf9ebfce486/25-200416p/problems/01-basic/06-dynamic-cast.cpp)
 
 ---
-## 1.2.1 Передача параметров в функции и умные указатели
+## 1.2.1. Передача параметров в функции и умные указатели
 Смотри [GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/) (Guru of the Week, автор — Herb Sutter).
 
 * Практически всегда по значению, `&&` и умные указатели не нужны:

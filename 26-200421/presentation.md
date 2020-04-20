@@ -23,7 +23,7 @@ map<int, string> m = ....;
     typename map<int, string>::iterator it = m.lower_bound(10);
     if (it != m.end()) cout << it->second << '\n';
     else               cout << "Not found\n";
-} // После этой скобки `it` недоступен
+}  // После этой скобки `it` недоступен
 ```
 
 После (строго лучше): <!-- обвести два куска, проверсти аналогию с `for` -->
@@ -33,7 +33,7 @@ if (auto it = m.find(10); it != s.end()) {
     cout << it->second << '\n';
 } else {
     cout << "Not found\n";  // it тут доступен.
-} // После этой скобки `it` недоступен.
+}  // После этой скобки `it` недоступен.
 ```
 
 Аналогично полезно с `.find()` и `dynamic_cast<T*>`, смотри [`25-200416p/problems/01-basic/06-dynamic-cast.cpp`](https://github.com/yeputons/hse-2019-cpp/blob/26daebb971d2c5b6f8f995e7aa40fdf9ebfce486/25-200416p/problems/01-basic/06-dynamic-cast.cpp)
@@ -134,10 +134,10 @@ int arr[N];
 const std::string FileOption = "--file";  // const => internal linkage!
 // a.h
 #include "my.h"
-.. &FileOption .. // (1), отличается от (2), и ладно?
+.. &FileOption ..  // (1), отличается от (2), и ладно?
 // b.cpp
 #include "my.h"
-.. &FileOption .. // (2), отличается от (1), и ладно?
+.. &FileOption ..  // (2), отличается от (1), и ладно?
 ```
 
 Можно `extern` и думать про ODR, но лучше `constexpr char FileOption[]`.
@@ -182,16 +182,16 @@ struct Foo {
 // foo.cpp
 const int Foo::N;           // Инициализировать уже не надо.
 constexpr char Foo::Name[];
-.. Foo::N ..        // ok
-.. Foo::Name[0] ..  // ok
-.. &Foo::N ..       // ok
-.. &Foo::Name[0] .. // ok
+.. Foo::N ..         // ok
+.. Foo::Name[0] ..   // ok
+.. &Foo::N ..        // ok
+.. &Foo::Name[0] ..  // ok
 }
 // main.cpp
-.. Foo::N ..        // ok
-.. Foo::Name[0] ..  // ok
-.. &Foo::N ..       // ok
-.. &Foo::Name[0] .. // ok
+.. Foo::N ..         // ok
+.. Foo::Name[0] ..   // ok
+.. &Foo::N ..        // ok
+.. &Foo::Name[0] ..  // ok
 ```
 
 Слово `static` в определении не нужно.

@@ -10,6 +10,6 @@ int main()
 {
     char const * name = typeid(X<int>).name();
 
-    std::cout << name << std::endl; // prints 1XIiE
-    std::cout << boost::core::demangle( name ) << std::endl; // prints X<int>
+    std::cout << name << std::endl;  // prints 1XIiE
+    std::cout << boost::core::demangle( name ) << std::endl;  // prints X<int>
 }

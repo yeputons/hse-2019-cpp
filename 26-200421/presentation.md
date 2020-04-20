@@ -8,7 +8,7 @@
   * Удобный сахар, но с подвохами, надо знать.
 1. RTTI (Run-Time Type Information)
   * Через него работает `dynamic_cast`.
-  * Напишете на практике свой `std::function`/`std::any`.
+  * Напишете на практике свой `std::any`.
 1. Unqualified lookup для функций, ADL.
   * Почему `std::operator<<`, но пишем `using std::cout; cout << a`?
 
@@ -390,3 +390,127 @@ const int &max = e.second;  // Oops.
 
 Рекомендация: осторожно с функциями, которые возвращают ссылки.
 С ними лучше `std::tie`.
+
+---
+## 3.1.1. RTTI и `dynamic_cast`
+* Run-Time Type Information для полиморфных типов
+  * Хотя бы одна виртуальная функция.
+* `dynamic_cast` смотрит на самом деле на RTTI.
+
+```c++
+struct Base { virtual ~Base(); int x; };
+struct Derived : Base { int y; };
+
+Base *b = ...;
+Derived *d = dynamic_cast<Derived*>(b);
+```
+
+Может выглядеть так (а может и по-другому):
+![RTTI probable layout](RTTI.svg)
+
+---
+## 3.1.2. RTTI и `typeid(..)`
+```c++
+#include <typeinfo>
+// ....
+Derived d;
+Base *b = &d;
+const std::type_info &info_b = typeid(*b);  // Всегда(!) по const&
+assert(info_b == typeid(d));
+assert(info_b == typeid(Derived));
+assert(info_b != typeid(Derived*));
+```
+
+При этом ничего про тип узнать нельзя: reflection отсутствует, поля не перечислить,
+родителей не перечислить...
+
+Но можно делать безопасный type erasure вместо `void*`:
+```c++
+void print(const std::any &a) {
+    if (auto *pInt = std::any_cast<int>(&a); pInt)
+        cout << "int: " << *pInt << '\n';
+}
+// ....
+print(10);    // int: 10
+print("foo"); //
+```
+
+---
+## 3.1.3. `type_info::name()`
+```c++
+template<class T> struct X {};
+// ....
+char const *name = typeid(X<int>).name();
+std::cout << name << '\n';  // 1XIiE ???
+```
+
+`type_info::name()` по стандарту возвращает _что угодно_.
+
+* Может совпадать у разных типов
+* Может отличаться от запуска к запуску
+* Иногда помогает расшифровать при помощи `boost::core::demangle`
+    * `sudo apt install libboost-all-dev` — в Boost очень много полезного.
+
+```c++
+#include <boost/core/demangle.hpp>
+// ....
+std::cout << boost::core::demangle(name) << '\n';  // X<int>
+```
+
+---
+## 3.1.4. `type_index`
+* `type_info` нельзя положить в контейнер:
+  ```c++
+  set<const std::type_info&> known_types;  // Не компилируется.
+  ```
+  * Нельзя копировать и перемещать, только по `const type_info&`.
+  * Нет `std::hash<>` (есть `.hash()`) и нет `operator<` (есть `.before()`).
+* По `name()` нельзя, он может совпадать у разных типов.
+* По адресам `type_info` нельзя: про них никаких гарантий нет.
+* Есть обёртка `std::type_index` (можно и самому написать):
+  ```c++
+  #include <typeindex>
+  // ....
+  set<std::type_index> known_types;
+  known_types.insert(typeid(int));
+  known_types.insert(typeid(short));
+  known_types.insert(typeid(std::type_index));
+  ```
+
+---
+## 3.1.5. Тонкости `typeid`
+Всегда отбрасывает ссылки и верхнюю константность.
+Три режима:
+
+* От типа — на этапе компиляции:
+  ```c++
+  const std::type_info &t1 = typeid(Base);
+  const std::type_info &t2 = typeid(Base*);
+  assert(typeid(Base) == typeid(const Base&));
+  ```
+* От неполиморфного выражения — на этапе компиляции:
+  ```c++
+  struct A { int x; };
+  struct B : A { int y; };
+  A foo();  // Никогда не вызывается.
+  // ....
+  assert(typeid(foo()) == typeid(A));
+  B b;
+  const A &bref = b;
+  assert(typeid(bref) == typeid(A));
+  ```
+* От полиморфного — вычисляет и смотрит тип.
+  * Если получил `nullptr`, то кидает `std::bad_typeid`.
+
+---
+## 3.1.6. Использование RTTI
+Применения:
+
+* `dynamic_cast<>`
+* Type erasure: сохраняем любые копируемые объекты в `std::any` (вместо `void*`)
+  и используем `any_cast` без UB.
+
+При этом исторически стоит дорого, много не умеет => редко используется => бывают баги в компиляторах и занимает много памяти.
+
+* Во встраиваемом программировании отрубается `-fno-rtti`
+* Можно реализовать самому как библиотеку: смотри [Boost.TypeIndex](https://www.boost.org/doc/libs/1_72_0/doc/html/boost_typeindex.html).

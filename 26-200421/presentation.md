@@ -1,4 +1,19 @@
-## If with init statement (C++17)
+## План
+1. Тонкости из домашек:
+  1. If with init statement.
+  1. Передача параметров в функции и умные указатели.
+  1. Как объявлять константы.
+1. `auto [a, b] = my_set.insert(..)`
+  * Нам потребуется `std::tuple<int, int, int>`
+  * Удобный сахар, но с подвохами, надо знать.
+1. RTTI (Run-Time Type Information)
+  * Через него работает `dynamic_cast`.
+  * Напишете на практике свой `std::function`/`std::any`.
+1. Unqualified lookup для функций, ADL.
+  * Почему `std::operator<<`, но пишем `using std::cout; cout << a`?
+
+---
+## 1.1. If with init statement (C++17)
 <!-- На лекции, чтобы попало на экзамен. -->
 
 До:
@@ -24,7 +39,7 @@ if (auto it = m.find(10); it != s.end()) {
 Аналогично полезно с `.find()` и `dynamic_cast<T*>`, смотри [`25-200416p/problems/01-basic/06-dynamic-cast.cpp`](https://github.com/yeputons/hse-2019-cpp/blob/26daebb971d2c5b6f8f995e7aa40fdf9ebfce486/25-200416p/problems/01-basic/06-dynamic-cast.cpp)
 
 ---
-## Передача параметров в функции и умные указатели
+## 1.2.1 Передача параметров в функции и умные указатели
 Смотри [GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/) (Guru of the Week, автор — Herb Sutter).
 
 * Практически всегда по значению, `&&` и умные указатели не нужны:
@@ -50,7 +65,7 @@ if (auto it = m.find(10); it != s.end()) {
     ```
 
 ---
-## Параметры только для чтения/для записи
+## 1.2.2. Параметры только для чтения/для записи
 * Если нам вcегда передают объект, а мы его только читаем:
   ```c++
   void printVector(const vector<int> &data);
@@ -74,7 +89,7 @@ if (auto it = m.find(10); it != s.end()) {
   ```
 
 ---
-## Умные указатели в параметрах
+## 1.2.3. Умные указатели в параметрах
 Умный указатель — пара `(данные, владение)`.
 В параметрах — только если нам важно, как именно им владеет __вызвавший__.
 Обычно неважно.
@@ -101,7 +116,7 @@ Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
 ```
 
 ---
-## Как объявлять константы вне классов
+## 1.3.1. Как объявлять константы вне классов
 <!-- Если внутри `.cpp`/`.h`, не внутри классов: -->
 
 Лучше с `constexpr` вместо `const`: https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rconst-constexpr
@@ -128,7 +143,7 @@ const std::string FileOption = "--file";  // const => internal linkage!
 Можно `extern` и думать про ODR, но лучше `constexpr char FileOption[]`.
 
 ---
-## Статические константы-члены класса
+## 1.3.2. Статические константы-члены класса
 ```c++
 // foo.h
 struct Foo {
@@ -157,7 +172,7 @@ struct Foo {
 Не всегда, но лучше не рисковать (IFNDR хуже UB).
 
 ---
-## Статические константы-члены класса: определение
+## 1.3.3. Определение констант
 ```c++
 // foo.h
 struct Foo {
@@ -183,7 +198,7 @@ constexpr char Foo::Name[];
 Всё ещё неидеальное решение.
 
 ---
-### Идеальный способ
+## 1.3.4. Идеальное объявление констант
 С C++17 можно добавить слово `inline` к переменным и константам
 ([TotW&nbsp;168](https://abseil.io/tips/168) — Tip of the Week), как для функций:
 

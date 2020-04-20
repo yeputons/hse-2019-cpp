@@ -84,17 +84,124 @@ if (auto it = m.find(10); it != s.end()) {
 * `unique_ptr<T>&` — почти никогда <!-- пример: swap, за деталями — в GotW -->
 * `const shared_ptr<T>&` — почти никогда <!-- пример: когда иногда хотим себе скопировать, за деталями — в GotW  -->
 * `shared_ptr<T>&*` — почти никогда
-*   ```c++
-    // Окно нельзя копировать, важно считать ссылки и владеть совместно.
-    void addToAnotherDesktop(shared_ptr<Window> window) {  // По значению.
-        recentlyMovedWindows.emplace_back(window);         // Можем копировать.   
-        myWindows.emplace_back(std::move(window));         // Можем мувать.
-    }
-    ```
-*   ```c++
-    Node(const Node &left_, const Node &_right)
-        : left(make_unique<Node>(left_)), .... {}
-    // Оптимизация: всегда оборачиваем в `unique_ptr`, давайте сразу его возьмём.
-    Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
-        : left(std::move(left_)), right(std::move(right_)) {}
-    ```
+
+```c++
+// Окно нельзя копировать, важно считать ссылки и владеть совместно.
+void addToAnotherDesktop(shared_ptr<Window> window) {  // По значению.
+    recentlyMovedWindows.emplace_back(window);         // Можем копировать.
+    myWindows.emplace_back(std::move(window));         // Можем мувать.
+}
+```
+```c++
+Node(const Node &left_, const Node &_right)
+    : left(make_unique<Node>(left_)), .... {}
+// Оптимизация: всегда оборачиваем в `unique_ptr`, давайте сразу его возьмём.
+Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
+    : left(std::move(left_)), right(std::move(right_)) {}
+```
+
+---
+## Как объявлять константы вне классов
+<!-- Если внутри `.cpp`/`.h`, не внутри классов: -->
+
+Лучше с `constexpr` вместо `const`: https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rconst-constexpr
+```c++
+constexr int N = 10000;
+int arr[N];
+```
+Это не форсирует вычисление в compile-time, но требует возможность.
+
+Не прокатит со сложными объектами (`std::string`) и поделом: проблемы с порядком инициализации
+между разными translation unit.
+
+```c++
+// my.h
+const std::string FileOption = "--file";  // const => internal linkage!
+// a.h
+#include "my.h"
+.. &FileOption .. // (1), отличается от (2), и ладно?
+// b.cpp
+#include "my.h"
+.. &FileOption .. // (2), отличается от (1), и ладно?
+```
+
+Можно `extern` и думать про ODR, но лучше `constexpr char FileOption[]`.
+
+---
+## Статические константы-члены класса
+```c++
+// foo.h
+struct Foo {
+    static const int N = 10;  // external linkage!
+    static constexpr char Name[] = "NAME";  // external linkage до C++17
+};
+// foo.cpp
+
+
+.. Foo::N ..          // ok
+.. Foo::Name[0] ..    // ok
+.. &Foo::N ..         // undefined reference?
+.. &Foo::Name[0] ..   // undefined reference?
+}
+// main.cpp
+.. Foo::N ..          // ok
+.. Foo::Name[0] ..    // ok
+.. &Foo::N ..         // undefined reference?
+.. &Foo::Name[0] ..   // undefined reference?
+```
+
+Как с функциями или глобальными переменными: мы только _объявили_ константу
+(несмотря на наличие инициализатора).
+
+Обязаны определить, причём ровно один раз (ODR).
+Не всегда, но лучше не рисковать (IFNDR хуже UB).
+
+---
+## Статические константы-члены класса: определение
+```c++
+// foo.h
+struct Foo {
+    static const int N = 10;  // external linkage!
+    static constexpr char Name[] = "NAME";  // external linkage до C++17
+};
+// foo.cpp
+const int Foo::N;           // Инициализировать уже не надо.
+constexpr char Foo::Name[];
+.. Foo::N ..        // ok
+.. Foo::Name[0] ..  // ok
+.. &Foo::N ..       // ok
+.. &Foo::Name[0] .. // ok
+}
+// main.cpp
+.. Foo::N ..        // ok
+.. Foo::Name[0] ..  // ok
+.. &Foo::N ..       // ok
+.. &Foo::Name[0] .. // ok
+```
+
+Слово `static` в определении не нужно.
+Всё ещё неидеальное решение.
+
+---
+### Идеальный способ
+С C++17 можно добавить слово `inline` к переменным и константам
+([TotW&nbsp;168](https://abseil.io/tips/168) — Tip of the Week), как для функций:
+
+* Все объявления становится и определениями.
+* Разрешается несколько определений, если они совпадают по токенам
+  * Иначе **IFNDR** ill-formed, no diagnostics required), UB навсегда.
+
+Итого: **почти всегда `constexpr`, а в заголовках — всегда `inline`**.
+
+```c++
+struct Foo {
+    static inline const std::string BAD = "Use constexpr";
+    static inline constexpr char Name[] = "NAME";
+};
+inline const std::string BAD = "Really, use constexpr";
+inline constexpr char Name[] = "NAME";
+```
+
+<!--
+Из `static constexpr` в C++17 следует `inline`, но я рекомендую всё равно писать.
+-->

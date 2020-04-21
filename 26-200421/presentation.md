@@ -39,7 +39,7 @@ if (auto it = m.find(10); it != s.end()) {
 Аналогично полезно с `.find()` и `dynamic_cast<T*>`, смотри [`25-200416p/problems/01-basic/06-dynamic-cast.cpp`](https://github.com/yeputons/hse-2019-cpp/blob/26daebb971d2c5b6f8f995e7aa40fdf9ebfce486/25-200416p/problems/01-basic/06-dynamic-cast.cpp)
 
 ---
-## 1.2.1. Передача параметров в функции и умные указатели
+## 1.2.1. Передача параметров в функции
 Смотри [GotW 91](https://herbsutter.com/2013/06/05/gotw-91-solution-smart-pointer-parameters/) (Guru of the Week, автор — Herb Sutter).
 
 * Практически всегда по значению, `&&` и умные указатели не нужны:
@@ -54,13 +54,12 @@ if (auto it = m.find(10); it != s.end()) {
     }
     ```
 
-* Если хотим отдать параметр/переменную — всегда пишем `std::move`:
+* Если хотим отдать что-то с именем (даже `&&`) — пишем `std::move`:
     ```c++
-    struct MyVector {
-        vector<int> data;
-        MyVector(vector<int> data_) : data(std::move(data_)) {
-            // Тут состояние data_ не определено.
-        }
+    template<typename T> struct MyVector {
+        vector<T> data;
+        MyVector(vector<T> data_) : data(std::move(data_)) { /* data_ = ?? */ }
+        void push_back(T &&value) { data.emplace_back(std::move(value)); }
     };
     ```
 
@@ -89,7 +88,39 @@ if (auto it = m.find(10); it != s.end()) {
   ```
 
 ---
-## 1.2.3. Умные указатели в параметрах
+## 1.2.3. Rvalue-ссылки в параметрах
+Не нужно, если объект умеет только `move` ([`unique_ptr`](https://stackoverflow.com/a/8114913/767632)):
+```c++
+void foo(unique_ptr<Foo> x /* unique_ptr<Foo> &&x */);
+unique_ptr<Foo> bar;
+foo(bar);             // Не скомпилируется в обоих случаях.
+foo(get_bar());       // Скомпилируется в обоих случаях.
+foo(std::move(bar));  // Скомпилируется в обоих случаях.
+```
+<!--
+Это может быть чуть менее эффективно в общем случае: тут
+мы вызываем лишний конструктор перемещения и деструктор.
+Для `unique_ptr` всё равно.
+-->
+
+Обычно не нужно, если объект можно копировать:
+```c+++
+void foo(Foo &&x);
+Foo bar;
+foo(bar);             // Не компилируется.
+foo(Foo(bar));        // Надо явно копировать, но зачем это требовать?
+foo(std::move(bar));  // Явно мувать можно всегда.
+```
+
+Иногда `&&` нужно для оптимизаций:
+
+```c++
+void push_back(const T&);  // 1 copy вместо 1 copy + 1 move + 1 dtor.
+void push_back(T&&);       // 1 move вместо 1 move + 1 move + 1 dtor.
+```
+
+---
+## 1.2.4. Умные указатели в параметрах
 Умный указатель — пара `(данные, владение)`.
 В параметрах — только если нам важно, как именно им владеет __вызвавший__.
 Обычно неважно.
@@ -108,8 +139,8 @@ void addToAnotherDesktop(shared_ptr<Window> window) {  // По значению.
 }
 ```
 ```c++
-Node(const Node &left_, const Node &_right)
-    : left(make_unique<Node>(left_)), .... {}
+Node(Node left_, Node right_)
+    : left(make_unique<Node>(std::move(left_))), .... {}
 // Оптимизация: всегда оборачиваем в `unique_ptr`, давайте сразу его возьмём.
 Node(unique_ptr<Node> left_, unique_ptr<Node> right_)  // Без &&
     : left(std::move(left_)), right(std::move(right_)) {}
@@ -358,8 +389,7 @@ std::tuple_element_t<1, E> &value = get<1>(e);  // Или e.get<1>()
   ```c++
   struct Good { int a, b; }
   struct GoodDerived : Good {};
-  ```
-  ```
+
   struct BadPrivate { int a; private: int b; }  // Приватные запрещены.
   struct BadDerived : Good { int c; }  // Все поля должны быть в одном классе.
   ```

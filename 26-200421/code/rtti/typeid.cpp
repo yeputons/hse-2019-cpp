@@ -6,7 +6,7 @@ struct Derived : Base { virtual ~Derived(); int y; };
 
 struct A { int x; };
 struct B : A { int y; };
-A foo();  // Никогда не вызывается.
+const A& foo() { static B b; return b; }  // Никогда не вызывается.
 
 int main() {
     const std::type_info &t1 = typeid(Base);

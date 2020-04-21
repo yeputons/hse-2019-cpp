@@ -210,8 +210,6 @@ Hidden friends:
   * https://www.justsoftwaresolutions.co.uk/cplusplus/hidden-friends.html
 
 ## Тонкости ADL [00:03]
-На экзамене нет.
-
 * При этом unqualified lookup также смотрит на конструкторы, а ADL смотрит только на функции. Пример.
 * Есть тонкости с вызовом шаблонов с явными параметрами, они иногда не компилируются: https://stackoverflow.com/a/45493969/767632
   (ADL не в курсе, что это функция, как в предыдущем пункте).

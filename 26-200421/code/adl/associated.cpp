@@ -11,10 +11,10 @@ namespace root {
         };
     }
     void func5(...) {}
-    using ns3::Container;
+    using Derived = ns3::Container::Derived;
 }
 int main() {
-    void (*data)(std::tuple<root::Container::Derived*>) = nullptr;
+    void (*data)(std::tuple<root::Derived*>) = nullptr;
     // sort(data);  // std::sort found, compilation error
     // func1(data);  // compilation error
     func2(data);  // ok

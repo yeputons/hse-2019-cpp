@@ -9,6 +9,6 @@ void print(const std::any &a) {
 }
 
 int main() {
-    print(10);    // int: 10
-    print("foo"); //
+    print(10);     // int: 10
+    print("foo");  //
 }

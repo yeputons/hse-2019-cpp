@@ -543,3 +543,296 @@ std::cout << boost::core::demangle(name) << '\n';  // X<int>
 
 * Во встраиваемом программировании отрубается `-fno-rtti`
 * Можно реализовать самому как библиотеку: смотри [Boost.TypeIndex](https://www.boost.org/doc/libs/1_72_0/doc/html/boost_typeindex.html).
+
+---
+## 4.1.1. Argument-dependent lookup (ADL)
+Ссылки: [GotW 30](http://www.gotw.ca/gotw/030.htm), [StackOverflow](https://stackoverflow.com/a/8111750/767632)
+
+```c++
+namespace std {
+    ostream& operator<<(ostream &os, string &s);
+}
+// ....
+std::ostream &output = ....;
+std::string s;
+output << s;  // Почему не std::operator<<(output, s); ?
+```
+ADL: если видим _неквалифицированный_ вызов функции, то смотрим на типы
+аргументов и ищем функции во всех связанных namespace'ах.
+
+* Удобно для операторов.
+* Обобщение: если мы вместе с классом дали пользователю какую-то функцию,
+  то она должна иметь те же моральные права, что и класс.
+  * http://www.gotw.ca/publications/mill02.htm
+
+<blockquote style="font-style: italic">
+Во-первых, в зависимости от типа аргумента, ADL работает девятью разными способами, убиться веником.
+(<a href="https://habr.com/ru/company/jugru/blog/447900/">источник</a>)
+</blockquote>
+
+---
+## 4.1.2. Примеры работающего ADL
+```c++
+#include <filesystem>  // C++17
+// ....
+std::filesystem::path from("a.txt");
+std::filesystem::path to("a-copy.txt");
+copy_file(from, to);  // copy_file не метод, ей не нужен доступ к приватным полям.
+// copy_file("a.txt", "a-copy-2.txt");  // Не компилируется, ADL не помог.
+std::filesystem::copy_file("a.txt", "a-copy-2.txt");  // Надо явно указать.
+```
+
+Range-based-for и structured binding ищут `begin()`/`end()`/`get()` через ADL:
+```c++
+namespace ns {
+    struct Foo { int x; };
+    const int* begin(const Foo &f) { return &f.x; }
+    const int* end(const Foo &f) { return &f.x + 1; }
+};
+int main() {
+    ns::Foo f{20};
+    for (int x : f) std::cout << x << '\n';
+}
+```
+Причём _только_ через ADL: объявить `begin`/`end` глобально — ошибка.
+
+---
+## 4.1.3 Примеры отключённого ADL
+```c++
+namespace foo {
+    namespace impl {
+        struct Foo { int x; };
+        int func(const Foo &f) { return f.x; }
+        int foo(const Foo &f) { return f.x; }
+    }
+    using impl::Foo;
+}
+namespace bar::impl {
+    struct Bar{ int x; };
+    int func(const Bar &f) { return f.x; }
+}
+
+int main() {
+    foo::Foo f;
+    bar::impl::Bar b;
+    func(f);  // ok
+    func(b);  // ok
+    foo::impl::foo(f);  // Qualified lookup, no ADL, ok.
+    foo::foo(f);  // Qualified lookup, no ADL, compilation error.
+    foo(f);  // compilation error: namespace foo
+}
+```
+
+---
+## 4.1.4. `std::swap` и ADL
+[Откуда взялся текущий `std::swap`](https://stackoverflow.com/a/5695855):
+
+```c++
+namespace std {
+    template<typename T> void swap(T&, T&);
+}
+struct MyVector<T>;
+namespace std {
+    template<typename T> void swap<MyVector<T>>(...); // Oops.
+    // В std:: можно только специализировать, но не перегружать.
+    // template<typename T> void swap(MyVector<T>, MyVector<T>); // Нельзя :(
+}
+```
+
+* Плохой вариант: требовать от всех `a.swap(b)`: не работает с `int`.
+* Вариант получше: ADL, и правильно использовать вот так:
+  ```с++
+  using std::swap;  // На случай, если стандартный через move подойдёт.
+  swap(a, b);  // Вызываем с ADL.
+  ```
+
+Есть [ниблоиды](https://habr.com/ru/company/jugru/blog/447900/):
+вызываем всегда через `std::swap`, который сам проверит `.swap`, ADL и стандартный.
+Используется в C++20 для constrained algorithms.
+
+---
+## 4.2.1. Unqualified lookup функций: поиск имён
+Ссылки: [TotW 49](https://abseil.io/tips/49) и [Cppreference](https://en.cppreference.com/w/cpp/language/adl).
+
+Только в случае `foo(a, b, c)`, никаких `ns::foo(a, b, c)` (это уже qualified).
+
+* Сначала ищем кого угодно с именем `foo` в текущем namespace и выше, включая `using`.
+    ```c++
+    void func(int);              // (1)
+    namespace ns {
+        int x(int);              // (2)
+        void func(const char*);  // (3)
+        void func(int, int);     // (4)
+        // using ::func;         // (1b)
+        void foo() {
+            int x;               // (5)
+            func(10);  // Нашли только (3) и (4), ошибка компиляции.
+                       // Если включить (1a), то найдём ещё и (1).
+            x(10);     // Нашли только (5), ошибка компиляции.
+        }
+    }
+    ```
+
+---
+## 4.2.2. Unqualified lookup функций: отключение ADL
+* Если на предыдущем шаги нашли член класса или не-функцию, то останавливаемся
+  и не запускаем ADL.
+    ```c++
+    namespace ns {
+        struct Foo {};
+        void foo(Foo) {}  // (1)
+        void bar(Foo) {}  // (2)
+        void baz(Foo) {}  // (3)
+    }
+    int baz;              // (4)
+    struct S {
+        ns::Foo f;
+        void bar() {}     // (5)
+        void method() {
+            foo(f);  // Включился ADL, нашли (1).
+            bar(f);  // Нашли (5), не стали включать ADL, ошибка компиляции.
+            baz(f);  // Нашли (4), не стали включать ADL, ошибка компиляции.
+        }
+    };
+    ```
+
+---
+## 4.2.3. ADL: связанные с аргументами типы
+* Нашли типы `Derived`, `Container`, `Base2`, взяли строго их namespace.
+    ```c++
+    namespace root {
+        namespace ns1 { struct Base1 {}; void func1(...) {} }
+        namespace ns2 { struct Base2 {}; void func2(...) {} }
+        namespace ns3 {
+            void func3(...) {}
+            struct Container : ns1::Base1 {
+                static void func4(...) {}
+                struct Derived : ns2::Base2 {};
+            };
+        }
+        void func5(...) {}
+        using ns3::Container;  // Или typedef, неважно.
+    }
+    void (*data)(std::tuple<root::Container::Derived*>) = nullptr;
+    sort(data);  // std::sort found, compilation error
+    func1(data);  // compilation error
+    func2(data);  // ok
+    func3(data);  // ok
+    func4(data);  // compilation error
+    func5(data);  // compilation error
+    ```
+
+---
+## 4.2.4. ADL: выбор перегрузки
+* Есть один namespace с шага &laquo;пошли наверх из текущего&raquo;.
+* Есть несколько связанных с аргументами (если не отключили ADL).
+
+```c++
+namespace ns1 {
+    struct Foo {};
+    namespace Foo_adl { void func(Foo) { cout << "(1)\n"; } }
+    using Foo_adl::func;
+}
+namespace ns2 {
+    struct Bar {};
+    namespace Bar_adl { void func(Bar) { cout << "(2)\n"; } }
+    using namespace Bar_adl;
+}
+void func(ns1::Foo) { cout << "(3)\n"; }
+void func(ns2::Bar) { cout << "(4)\n"; }
+// ....
+ns1::Foo f; ns2::Bar b;
+ns1::func(f);  // (1), qualified lookup
+ns2::func(b);  // (2), qualified lookup
+::func(f);     // (3), qualified lookup
+::func(b);     // (4), qualified lookup
+// func(f);    // ambiguous: (1) or (3), global and ns1
+func(b);       // (4), global and ns2
+```
+
+---
+## 4.3.1. Тонкости ADL: hidden friends
+```c++
+#include <iostream>
+namespace ns {
+    struct Foo {
+        friend void foo(Foo) {}  // implicitly inline.
+    };
+    // void foo(Foo);  // (1)
+}
+// ....
+ns::Foo f;
+foo(f);      // ok
+ns::foo(f);  // compilation error
+}
+```
+Если функция-друг определена внутри класса, то её можно найти __только__ через ADL
+
+* Плюсы: функции можно вызвать только через ADL (примерно как методы), сложнее опечататься.
+* Минусы: теперь эту функцию нельзя никуда явно передать, только лямбдой.
+
+Можно раскомментировать `(1)` и функция станет видна в namespace.
+
+---
+## 4.3.2. Прочие тонкости ADL
+* Unqualified lookup смотрит на конструкторы, но ADL — нет:
+    ```c++
+    namespace ns {
+        struct Foo {};
+        struct Bar { Bar(Foo) {} };
+        void foo() {
+            Foo f;
+            auto x = Bar(f);
+        }
+    }
+    // ....
+    ns::Foo f;
+    auto x = Bar(f);
+    ```
+* ADL [иногда не может понять](https://stackoverflow.com/a/45493969/767632),
+  что мы вызвыаем шаблон функции с явными шаблонными параметрами:
+    ```c++
+    std::tuple<int, int> a;
+    std::get<0>(a);  // Ок.
+    get<0>(a);       // (get < 0) > (a); ???
+                     // В structured binding стоит костыль, чтобы работало.
+    ```
+
+---
+## 4.3.3. Возможный стиль: отключение ADL
+До:
+```c++
+namespace ns {
+    struct Foo { .... };
+    struct Bar { .... };
+    void func1(....);
+    void func2(....);
+    struct Baz { .... };
+    void func_baz(Baz);
+}
+```
+
+После (только пробелы надо нормальные):
+```c++
+namespace ns {
+    namespace no_adl { struct Foo { .... }; struct Bar { .... };   }
+                       using no_adl::Foo;   using no_adl::Bar;
+    void func1(....);
+    void func2(....);
+    struct baz_adl { struct Baz { .... }; void func_baz(Baz);      }
+                     using baz_adl::Baz;  using baz_adl::func_baz;
+}
+```
+
+---
+## 4.3.4 Практические следствия ADL
+* Вспомогательные для класса функции и операторы вроде `copy_file` должны быть в namespace класса
+  ([1](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#c5-place-helper-functions-in-the-same-namespace-as-the-class-they-support),
+  [2](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#c168-define-overloaded-operators-in-the-namespace-of-their-operands)).
+* Можно пользоваться ADL, но осторожно:
+  * `count(vec.begin(), vec.end())` может не скомпилироваться
+  * `vector::iterator` — это класс из `std`/`vector` или `typedef int*`?
+* Осторожно с рефакторингами:
+  * Перемещение функций, типов
+* Если у вас вызывается странная функция без namespace — это ADL.
+* Всегда пишите `using std::swap; swap(a, b)`.

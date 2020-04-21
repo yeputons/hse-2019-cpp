@@ -44,7 +44,7 @@ if (auto it = m.find(10); it != s.end()) {
 
 * Практически всегда по значению, `&&` и умные указатели не нужны:
     ```c++
-    void foo(vector<int> foo_data) { sort(foo_data.begin(), foo_data.end(); .... };
+    void foo(vector<int> foo_data) { sort(foo_data.begin(), foo_data.end(); .. };
     int main() {
         vector<int> data = {1, 2, 3, 4, 5};
         foo(data);  // Тут скопируем, вектор ещё нужен.
@@ -456,7 +456,7 @@ assert(info_b != typeid(Derived*));
 ```c++
 void print(const std::any &a) {
     if (auto *pInt = std::any_cast<int>(&a); pInt)  // Как dynamic_cast.
-        cout << "int: " << *pInt << '\n';
+        cout << "int: " << *pInt << '\n';           // Нужен в точности int.
 }
 // ....
 print(10);    // int: 10
@@ -627,7 +627,7 @@ int main() {
 namespace std {
     template<typename T> void swap(T&, T&);
 }
-template<typename T> struct MyVec<T> { .... };
+template<typename T> struct MyVec { .... };
 namespace std {
     template<typename T> void swap<MyVec<T>>(...);  // Частичная специализация:(
     // В std:: можно только специализировать, но не перегружать.
@@ -663,7 +663,7 @@ namespace std {
         void foo() {
             int x;               // (5)
             func(10);  // Нашли только (3) и (4), ошибка компиляции.
-                       // Если включить (1a), то найдём ещё и (1).
+                       // Если включить (1b), то найдём ещё и (1).
             x(10);     // Нашли только (5), ошибка компиляции.
         }
     }
@@ -679,15 +679,18 @@ namespace std {
         void foo(Foo) {}  // (1)
         void bar(Foo) {}  // (2)
         void baz(Foo) {}  // (3)
+        void qwe(Foo) {}  // (4)
     }
-    int baz;              // (4)
+    int baz;              // (5)
+    void qwe() {}         // (6)
     struct S {
         ns::Foo f;
-        void bar() {}     // (5)
+        void bar() {}     // (7)
         void method() {
             foo(f);  // Включился ADL, нашли (1).
-            bar(f);  // Нашли (5), не стали включать ADL, ошибка компиляции.
-            baz(f);  // Нашли (4), не стали включать ADL, ошибка компиляции.
+            bar(f);  // Нашли (7), не стали включать ADL, ошибка компиляции.
+            baz(f);  // Нашли (5), не стали включать ADL, ошибка компиляции.
+            qwe(f);  // Нашли (6) и (4), разрешили перегрузку.
         }
     };
     ```
@@ -760,7 +763,6 @@ namespace ns {
 ns::Foo f;
 foo(f);      // ok
 ns::foo(f);  // compilation error
-}
 ```
 Если функция-друг определена внутри класса, то её можно найти __только__ через ADL
 

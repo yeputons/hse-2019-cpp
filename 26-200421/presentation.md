@@ -782,12 +782,12 @@ ns::foo(f);  // compilation error
         struct Bar { Bar(Foo) {} };
         void foo() {
             Foo f;
-            auto x = Bar(f);
+            auto x = Bar(f);  // ok
         }
     }
     // ....
     ns::Foo f;
-    auto x = Bar(f);
+    auto x = Bar(f);  // compilation error
     ```
 * ADL [иногда не может понять](https://stackoverflow.com/a/45493969/767632),
   что мы вызвыаем шаблон функции с явными шаблонными параметрами:

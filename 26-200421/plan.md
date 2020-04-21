@@ -140,22 +140,6 @@ https://en.cppreference.com/w/cpp/language/structured_binding
   * Во встраиваемом программировании отрубается `-fno-rtti`
   * Можно реализовать самому как библиотеку: Boost.TypeIndex
 
-# Прочие ссылки, не на экзамен [00:05]
-**Можно пропустить**,
-
-* User defined literals, не на экзамен: https://en.cppreference.com/w/cpp/language/user_literal
-  * Пример из chrono: `auto duration = 10s` (секунд).
-  * Пример для автовывода типов: `split(....) == vector{"foo"sv}` (иначе был бы `vector<char*>`).
-  * Можно писать свои, можно даже парсить длинные числа руками.
-* Был `dynamic_cast`. А для `shared_ptr` есть аналогичный `dynamic_pointer_cast` (и ещё три аналогичных `*_pointer_cast`).
-  Это популярно для умных указателей, если вообще имеет смысл менять тип указателя, не меняя тип владения
-  (для `unique_ptr` не имеет).
-* CRTP:
-  * https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Curiously_Recurring_Template_Pattern
-  * Можно реализовать для реализации `struct Point : operators<Point> { bool operator<(..); }`
-  * Можно для вынесения любой другой функциональности в общего предка без виртуальных функций.
-* Pimpl для выноса приватных полей и методов из заголовка и сохранения API/ABI. Ценой динамических выделений памяти.
-
 # Unqualified functions lookup, Argument-Dependent Lookup (ADL), Koenig search [00:30]
 ## Базовое про ADL [00:05]
 http://www.gotw.ca/gotw/030.htm

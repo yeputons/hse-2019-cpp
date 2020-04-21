@@ -2,6 +2,8 @@
 Шаблонные друзья: https://blog.panicsoftware.com/friends-and-where-to-find-them/
 thread_local переменные
 
+friend class
+
 Пример для `auto foo() ->`: возвращаемое значение — приватный тип для структуры. Смотри технофлуд от 20.04.2020 12:50 MSK.
 Обязательно читать ошибки сверху вниз.
 

@@ -111,10 +111,37 @@ TEST_CASE("std::swap<any> works") {
 #endif  // ANY_TEST_03_SWAP
 
 #ifdef ANY_TEST_04_MOVABLE
-TEST_CASE("std::swap<any> is movable") {
+TEST_CASE("any is move-constructible") {
     cls_26::any a = 10;
     cls_26::any b(std::move(a));
     CHECK(b.type() == typeid(int));
+    CHECK(a.type() == typeid(void));
+
+    cls_26::any c(std::move(a));
+    CHECK(c.type() == typeid(void));
+    CHECK(a.type() == typeid(void));
+}
+
+TEST_CASE("any is move-assignable") {
+    cls_26::any a = 10;
+    cls_26::any b = std::string("foo");
+    cls_26::any c;
+    cls_26::any d;
+
+    a = std::move(b);  // non-empty <-- non-empty
+    CHECK(a.type() == typeid(std::string));
+    CHECK(b.type() == typeid(void));
+
+    b = std::move(a);  // empty <-- non-empty
+    CHECK(b.type() == typeid(std::string));
+    CHECK(a.type() == typeid(void));
+
+    c = std::move(a);  // empty <-- empty
+    CHECK(c.type() == typeid(void));
+    CHECK(a.type() == typeid(void));
+
+    b = std::move(a);  // non-empty <-- empty
+    CHECK(b.type() == typeid(void));
     CHECK(a.type() == typeid(void));
 }
 #endif  // ANY_TEST_04_MOVABLE

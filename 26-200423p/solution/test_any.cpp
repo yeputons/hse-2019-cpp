@@ -3,6 +3,7 @@
 
 #include "doctest.h"
 #include <string>
+#include <utility>
 #include <vector>
 #include <type_traits>
 
@@ -14,6 +15,9 @@
 #define ANY_TEST_05_COPYABLE
 #define ANY_TEST_06_ANY_CAST_NON_CONST
 #define ANY_TEST_07_ANY_CAST_CONST
+#define ANY_CAST_08_ANY_CAST_VAL
+#define ANY_CAST_09_ANY_CAST_RREF
+#define ANY_CAST_10_ANY_CAST_LREF
 
 #ifdef ANY_TEST_00_INIT
 TEST_CASE("Default-initialize any") {
@@ -252,3 +256,134 @@ TEST_CASE("any_cast<>(any*) works") {
     }
 }
 #endif  // ANY_TEST_07_ANY_CAST_CONST
+
+#ifdef ANY_CAST_08_ANY_CAST_VAL
+static_assert(std::is_convertible_v<cls_26::bad_any_cast&, std::logic_error&>);
+
+TEST_CASE("any_cast<>(any&) and any_cast<>(const any&) work") {
+    SUBCASE("any to int") {
+        cls_26::any a = 10;
+        static_assert(!std::is_reference_v<decltype(cls_26::any_cast<int>(a))>);
+        static_assert(!std::is_const_v<decltype(cls_26::any_cast<int>(a))>);
+        CHECK(cls_26::any_cast<int>(a) == 10);
+    }
+    SUBCASE("any to std::string") {
+        cls_26::any a = std::string("foo");
+        static_assert(!std::is_reference_v<decltype(cls_26::any_cast<std::string>(a))>);
+        static_assert(!std::is_const_v<decltype(cls_26::any_cast<std::string>(a))>);
+        CHECK(cls_26::any_cast<std::string>(a) == "foo");
+    }
+    SUBCASE("const any to int") {
+        const cls_26::any a = 10;
+        static_assert(!std::is_reference_v<decltype(cls_26::any_cast<int>(a))>);
+        static_assert(!std::is_const_v<decltype(cls_26::any_cast<int>(a))>);
+        CHECK(cls_26::any_cast<int>(a) == 10);
+    }
+    SUBCASE("const any to std::string") {
+        const cls_26::any a = std::string("foo");
+        static_assert(!std::is_reference_v<decltype(cls_26::any_cast<std::string>(a))>);
+        static_assert(!std::is_const_v<decltype(cls_26::any_cast<std::string>(a))>);
+        CHECK(cls_26::any_cast<std::string>(a) == "foo");
+    }
+
+    SUBCASE("empty any to different_types") {
+        cls_26::any a;
+        CHECK_THROWS_AS(cls_26::any_cast<int>(a), const cls_26::bad_any_cast &);
+        CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
+    }
+    SUBCASE("const empty any to different_types") {
+        const cls_26::any a;
+        CHECK_THROWS_AS(cls_26::any_cast<int>(a), const cls_26::bad_any_cast &);
+        CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
+    }
+
+    SUBCASE("any to int erroneously") {
+        cls_26::any a = std::string("foo");
+        CHECK_THROWS_AS(cls_26::any_cast<int>(a), const cls_26::bad_any_cast &);
+    }
+    SUBCASE("any to std::string erroneously") {
+        cls_26::any a = 10;
+        CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
+    }
+    SUBCASE("const any to int erroneously") {
+        cls_26::any a = std::string("foo");
+        CHECK_THROWS_AS(cls_26::any_cast<int>(a), const cls_26::bad_any_cast &);
+    }
+    SUBCASE("const any to std::string erroneously") {
+        cls_26::any a = 10;
+        CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
+    }
+}
+#endif  // ANY_CAST_08_ANY_CAST_VAL
+
+#ifdef ANY_CAST_09_ANY_CAST_RREF
+TEST_CASE("any_cast<T>(any&&) works and moves from") {
+    struct MovableFrom {
+        bool moved = false, moved_from = false;
+
+        MovableFrom() {}
+        MovableFrom(const MovableFrom &other) : moved(other.moved), moved_from(other.moved_from) {}
+        MovableFrom(MovableFrom &&other) : moved(true) { other.moved_from = true; }
+    };
+
+    MovableFrom object;
+    REQUIRE(!object.moved_from);
+    cls_26::any a = object;
+    CHECK(!object.moved_from);
+
+    static_assert(!std::is_reference_v<decltype(cls_26::any_cast<MovableFrom>(std::move(a)))>);
+    static_assert(!std::is_const_v<decltype(cls_26::any_cast<MovableFrom>(std::move(a)))>);
+
+    SUBCASE("check moves") {
+        {
+            MovableFrom inside = cls_26::any_cast<MovableFrom>(a);
+            CHECK(!inside.moved);
+            CHECK(!inside.moved_from);
+        }
+        {
+            MovableFrom inside = cls_26::any_cast<MovableFrom>(a);
+            CHECK(!inside.moved);
+            CHECK(!inside.moved_from);
+        }
+        {
+            MovableFrom inside = cls_26::any_cast<MovableFrom>(std::move(a));
+            CHECK(inside.moved);
+            CHECK(!inside.moved_from);
+        }
+        {
+            MovableFrom inside = cls_26::any_cast<MovableFrom>(a);
+            CHECK(!inside.moved);
+            CHECK(inside.moved_from);
+        }
+    }
+
+    SUBCASE("exception is raised on erroneous conversion") {
+        CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
+    }
+}
+#endif  // ANY_CAST_09_ANY_CAST_REF
+
+#ifdef ANY_CAST_10_ANY_CAST_LREF
+TEST_CASE("any_cast<T&>(any)") {
+    SUBCASE("any to int&") {
+        cls_26::any a = 10;
+        int &x = cls_26::any_cast<int&>(a);
+        REQUIRE(x == 10);
+        x = 20;
+        REQUIRE(x == 20);
+        REQUIRE(cls_26::any_cast<int>(a) == 20);
+    }
+    SUBCASE("any to std::string&") {
+        cls_26::any a = std::string("foo");
+        std::string &x = cls_26::any_cast<std::string&>(a);
+        REQUIRE(x == "foo");
+        x += "x";
+        REQUIRE(x == "foox");
+        REQUIRE(cls_26::any_cast<std::string>(a) == "foox");
+    }
+    SUBCASE("exception is raised on erroneous conversion") {
+        cls_26::any a = 10;
+        CHECK_THROWS_AS(cls_26::any_cast<std::string&>(a), const cls_26::bad_any_cast &);
+    }
+}
+#endif  // ANY_CAST_10_ANY_CAST_LREF

@@ -1,10 +1,17 @@
 #ifndef ANY_H_
 #define ANY_H_
 
+#include <stdexcept>
 #include <memory>
+#include <type_traits>
 #include <typeinfo>
+#include <utility>
 
 namespace cls_26 {
+
+struct bad_any_cast : std::logic_error {
+    bad_any_cast() : std::logic_error("Bad any_cast") {}
+};
 
 struct any {
     any() {}
@@ -69,6 +76,27 @@ private:
 
 template<typename T> T* any_cast(any*);
 template<typename T> const T* any_cast(const any*);
+
+template<typename T>
+T any_cast(any &a) {
+    auto ptr = any_cast<std::remove_reference_t<T>>(&a);
+    if (!ptr) throw bad_any_cast();
+    return *ptr;
+}
+
+template<typename T>
+T any_cast(const any &a) {
+    auto ptr = any_cast<T>(&a);
+    if (!ptr) throw bad_any_cast();
+    return *ptr;
+}
+
+template<typename T>
+T any_cast(any &&a) {
+    auto ptr = any_cast<T>(&a);
+    if (!ptr) throw bad_any_cast();
+    return std::move(*ptr);
+}
 
 }  // namespace cls_26
 

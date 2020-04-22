@@ -150,7 +150,7 @@ TEST_CASE("any is move-assignable") {
 #endif  // ANY_TEST_04_MOVABLE
 
 #ifdef ANY_TEST_05_COPYABLE
-TEST_CASE("std::swap<any> is copy-constructible") {
+TEST_CASE("any is copy-constructible") {
     SUBCASE("") {
         cls_26::any a;
         cls_26::any b = a;
@@ -168,7 +168,7 @@ TEST_CASE("std::swap<any> is copy-constructible") {
     }
 }
 
-TEST_CASE("std::swap<any> is copy-constructible") {
+TEST_CASE("any is copy-constructible") {
     cls_26::any a = 10;
     cls_26::any b = std::string("foo");
     cls_26::any c;

@@ -192,6 +192,9 @@ TEST_CASE("std::swap<any> is copy-constructible") {
 
     cls_26::any &bres = b = d;
     CHECK(&bres == &b);
+
+    a = 12345;  // Implicit conversion.
+    CHECK(a.type() == typeid(int));
 }
 #endif  // ANY_TEST_05_COPYABLE
 

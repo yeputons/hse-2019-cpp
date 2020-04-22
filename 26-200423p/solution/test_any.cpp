@@ -201,12 +201,9 @@ TEST_CASE("any_cast<>(any*) works") {
 
 #ifdef ANY_TEST_7_ANY_CAST_CONST
 TEST_CASE("any_cast<>(any*) works") {
-    SUBCASE("nullptr to int") {
+    SUBCASE("nullptr to different types") {
         const cls_26::any *a = nullptr;
         CHECK(cls_26::any_cast<int>(a) == nullptr);
-    }
-    SUBCASE("nullptr to std::string") {
-        const cls_26::any *a = nullptr;
         CHECK(cls_26::any_cast<std::string>(a) == nullptr);
     }
     SUBCASE("nullptr to void") {
@@ -214,12 +211,9 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(cls_26::any_cast<void>(a) == nullptr);
     }
 
-    SUBCASE("empty any to int") {
+    SUBCASE("empty any to different types") {
         const cls_26::any a;
         CHECK(cls_26::any_cast<int>(&a) == nullptr);
-    }
-    SUBCASE("empty any to std::string") {
-        const cls_26::any a;
         CHECK(cls_26::any_cast<std::string>(&a) == nullptr);
     }
     SUBCASE("empty any to void") {

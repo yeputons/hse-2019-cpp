@@ -15,9 +15,9 @@
 //#define ANY_TEST_05_COPYABLE
 //#define ANY_TEST_06_ANY_CAST_NON_CONST
 //#define ANY_TEST_07_ANY_CAST_CONST
-//#define ANY_CAST_08_ANY_CAST_VAL
-//#define ANY_CAST_09_ANY_CAST_RREF
-//#define ANY_CAST_10_ANY_CAST_LREF
+//#define ANY_TEST_08_ANY_CAST_VAL
+//#define ANY_TEST_09_ANY_CAST_RREF
+//#define ANY_TEST_10_ANY_CAST_LREF
 
 #ifdef ANY_TEST_00_INIT
 TEST_CASE("Default-initialize any") {
@@ -111,17 +111,47 @@ TEST_CASE("std::swap<any> works") {
 #endif  // ANY_TEST_03_SWAP
 
 #ifdef ANY_TEST_04_MOVABLE
-TEST_CASE("std::swap<any> is movable") {
+TEST_CASE("any is move-constructible") {
     cls_26::any a = 10;
     cls_26::any b(std::move(a));
     CHECK(b.type() == typeid(int));
     CHECK(a.type() == typeid(void));
+
+    cls_26::any c(std::move(a));
+    CHECK(c.type() == typeid(void));
+    CHECK(a.type() == typeid(void));
+}
+
+TEST_CASE("any is move-assignable") {
+    cls_26::any a = 10;
+    cls_26::any b = std::string("foo");
+    cls_26::any c;
+    cls_26::any d;
+
+    a = std::move(b);  // non-empty <-- non-empty
+    CHECK(a.type() == typeid(std::string));
+    CHECK(b.type() == typeid(void));
+
+    b = std::move(a);  // empty <-- non-empty
+    CHECK(b.type() == typeid(std::string));
+    CHECK(a.type() == typeid(void));
+
+    c = std::move(a);  // empty <-- empty
+    CHECK(c.type() == typeid(void));
+    CHECK(a.type() == typeid(void));
+
+    b = std::move(a);  // non-empty <-- empty
+    CHECK(b.type() == typeid(void));
+    CHECK(a.type() == typeid(void));
+
+    cls_26::any &bres = b = std::move(a);
+    CHECK(&bres == &b);
 }
 #endif  // ANY_TEST_04_MOVABLE
 
 #ifdef ANY_TEST_05_COPYABLE
-TEST_CASE("std::swap<any> is copyable") {
-    SUBCASE("empty any") {
+TEST_CASE("any is copy-constructible") {
+    SUBCASE("") {
         cls_26::any a;
         cls_26::any b = a;
         CHECK(a.type() == typeid(void));
@@ -136,6 +166,35 @@ TEST_CASE("std::swap<any> is copyable") {
         CHECK(a.type() == typeid(std::vector<int>));
         CHECK(b.type() == typeid(std::vector<int>));
     }
+}
+
+TEST_CASE("any is copy-constructible") {
+    cls_26::any a = 10;
+    cls_26::any b = std::string("foo");
+    cls_26::any c;
+    cls_26::any d;
+
+    a = b;  // non-empty <-- non-empty
+    CHECK(a.type() == typeid(std::string));
+    CHECK(b.type() == typeid(std::string));
+
+    c = d;  // empty <-- empty
+    CHECK(c.type() == typeid(void));
+    CHECK(d.type() == typeid(void));
+
+    c = b;  // empty <-- non-empty
+    CHECK(c.type() == typeid(std::string));
+    CHECK(b.type() == typeid(std::string));
+
+    b = d;  // non-empty <-- empty
+    CHECK(b.type() == typeid(void));
+    CHECK(d.type() == typeid(void));
+
+    cls_26::any &bres = b = d;
+    CHECK(&bres == &b);
+
+    a = 12345;  // Implicit conversion.
+    CHECK(a.type() == typeid(int));
 }
 #endif  // ANY_TEST_05_COPYABLE
 
@@ -257,7 +316,7 @@ TEST_CASE("any_cast<>(any*) works") {
 }
 #endif  // ANY_TEST_07_ANY_CAST_CONST
 
-#ifdef ANY_CAST_08_ANY_CAST_VAL
+#ifdef ANY_TEST_08_ANY_CAST_VAL
 static_assert(std::is_convertible_v<cls_26::bad_any_cast&, std::logic_error&>);
 
 TEST_CASE("any_cast<>(any&) and any_cast<>(const any&) work") {
@@ -314,9 +373,9 @@ TEST_CASE("any_cast<>(any&) and any_cast<>(const any&) work") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_08_ANY_CAST_VAL
+#endif  // ANY_TEST_08_ANY_CAST_VAL
 
-#ifdef ANY_CAST_09_ANY_CAST_RREF
+#ifdef ANY_TEST_09_ANY_CAST_RREF
 TEST_CASE("any_cast<T>(any&&) works and moves from") {
     struct MovableFrom {
         bool moved = false, moved_from = false;
@@ -361,9 +420,9 @@ TEST_CASE("any_cast<T>(any&&) works and moves from") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_09_ANY_CAST_REF
+#endif  // ANY_TEST_09_ANY_CAST_REF
 
-#ifdef ANY_CAST_10_ANY_CAST_LREF
+#ifdef ANY_TEST_10_ANY_CAST_LREF
 TEST_CASE("any_cast<T&>(any)") {
     SUBCASE("any to int&") {
         cls_26::any a = 10;
@@ -386,4 +445,4 @@ TEST_CASE("any_cast<T&>(any)") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string&>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_10_ANY_CAST_LREF
+#endif  // ANY_TEST_10_ANY_CAST_LREF

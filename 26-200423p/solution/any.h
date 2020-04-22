@@ -17,12 +17,15 @@ struct any {
     any() {}
 
     any(any &&other) = default;
-    any& operator=(any &&other) = default;
 
     any(const any &other) : data(other.data ? other.data->clone() : nullptr) {}
 
     template<typename T>
     any(const T &object) : data(std::make_unique<any_data<T>>(object)) {}
+
+    void operator=(any other) {
+        data.swap(other.data);
+    }
 
     const std::type_info& type() const {
         return data ? data->type() : typeid(void);

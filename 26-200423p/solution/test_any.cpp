@@ -147,8 +147,8 @@ TEST_CASE("any is move-assignable") {
 #endif  // ANY_TEST_04_MOVABLE
 
 #ifdef ANY_TEST_05_COPYABLE
-TEST_CASE("std::swap<any> is copyable") {
-    SUBCASE("empty any") {
+TEST_CASE("std::swap<any> is copy-constructible") {
+    SUBCASE("") {
         cls_26::any a;
         cls_26::any b = a;
         CHECK(a.type() == typeid(void));
@@ -163,6 +163,29 @@ TEST_CASE("std::swap<any> is copyable") {
         CHECK(a.type() == typeid(std::vector<int>));
         CHECK(b.type() == typeid(std::vector<int>));
     }
+}
+
+TEST_CASE("std::swap<any> is copy-constructible") {
+    cls_26::any a = 10;
+    cls_26::any b = std::string("foo");
+    cls_26::any c;
+    cls_26::any d;
+
+    a = b;  // non-empty <-- non-empty
+    CHECK(a.type() == typeid(std::string));
+    CHECK(b.type() == typeid(std::string));
+
+    c = d;  // empty <-- empty
+    CHECK(c.type() == typeid(void));
+    CHECK(d.type() == typeid(void));
+
+    c = b;  // empty <-- non-empty
+    CHECK(c.type() == typeid(std::string));
+    CHECK(b.type() == typeid(std::string));
+
+    b = d;  // non-empty <-- empty
+    CHECK(b.type() == typeid(void));
+    CHECK(d.type() == typeid(void));
 }
 #endif  // ANY_TEST_05_COPYABLE
 

@@ -6,16 +6,16 @@
 #include <vector>
 #include <type_traits>
 
-#define ANY_TEST_0_INIT
-#define ANY_TEST_1_OWNERSHIP
-#define ANY_TEST_2_TYPE
-#define ANY_TEST_3_SWAP
-#define ANY_TEST_4_MOVABLE
-#define ANY_TEST_5_COPYABLE
-#define ANY_TEST_6_ANY_CAST_NON_CONST
-#define ANY_TEST_7_ANY_CAST_CONST
+#define ANY_TEST_00_INIT
+#define ANY_TEST_01_OWNERSHIP
+#define ANY_TEST_02_TYPE
+#define ANY_TEST_03_SWAP
+#define ANY_TEST_04_MOVABLE
+#define ANY_TEST_05_COPYABLE
+#define ANY_TEST_06_ANY_CAST_NON_CONST
+#define ANY_TEST_07_ANY_CAST_CONST
 
-#ifdef ANY_TEST_0_INIT
+#ifdef ANY_TEST_00_INIT
 TEST_CASE("Default-initialize any") {
     cls_26::any x;
     static_cast<void>(x);
@@ -35,9 +35,9 @@ TEST_CASE("Copy-initialize any from...") {
         static_cast<void>(x);
     }
 }
-#endif  // ANY_TEST_0_COPY_INIT
+#endif  // ANY_TEST_00_COPY_INIT
 
-#ifdef ANY_TEST_1_OWNERSHIP
+#ifdef ANY_TEST_01_OWNERSHIP
 TEST_CASE("any owns the object") {
     int destructors = 0;
     struct DestructCounter {
@@ -58,9 +58,9 @@ TEST_CASE("any owns the object") {
     }
     CHECK(destructors == 2);
 }
-#endif  // ANY_TEST_1_ONWERSHIP
+#endif  // ANY_TEST_01_ONWERSHIP
 
-#ifdef ANY_TEST_2_TYPE
+#ifdef ANY_TEST_02_TYPE
 TEST_CASE("any knows type of the object") {
     SUBCASE("int") {
         const cls_26::any &x = 10;
@@ -94,9 +94,9 @@ TEST_CASE("any knows type of the object") {
         CHECK(x.type() == typeid(void));
     }
 }
-#endif  // ANY_TEST_2_TYPE
+#endif  // ANY_TEST_02_TYPE
 
-#ifdef ANY_TEST_3_SWAP
+#ifdef ANY_TEST_03_SWAP
 TEST_CASE("std::swap<any> works") {
     cls_26::any a = 10;
     cls_26::any b = std::string("foo");
@@ -104,18 +104,18 @@ TEST_CASE("std::swap<any> works") {
     CHECK(a.type() == typeid(std::string));
     CHECK(b.type() == typeid(int));
 }
-#endif  // ANY_TEST_3_SWAP
+#endif  // ANY_TEST_03_SWAP
 
-#ifdef ANY_TEST_4_MOVABLE
+#ifdef ANY_TEST_04_MOVABLE
 TEST_CASE("std::swap<any> is movable") {
     cls_26::any a = 10;
     cls_26::any b(std::move(a));
     CHECK(b.type() == typeid(int));
     CHECK(a.type() == typeid(void));
 }
-#endif  // ANY_TEST_4_MOVABLE
+#endif  // ANY_TEST_04_MOVABLE
 
-#ifdef ANY_TEST_5_COPYABLE
+#ifdef ANY_TEST_05_COPYABLE
 TEST_CASE("std::swap<any> is copyable") {
     SUBCASE("empty any") {
         cls_26::any a;
@@ -133,9 +133,9 @@ TEST_CASE("std::swap<any> is copyable") {
         CHECK(b.type() == typeid(std::vector<int>));
     }
 }
-#endif  // ANY_TEST_5_COPYABLE
+#endif  // ANY_TEST_05_COPYABLE
 
-#ifdef ANY_TEST_6_ANY_CAST_NON_CONST
+#ifdef ANY_TEST_06_ANY_CAST_NON_CONST
 TEST_CASE("any_cast<>(any*) works") {
     SUBCASE("nullptr to int") {
         cls_26::any *a = nullptr;
@@ -197,9 +197,9 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(cls_26::any_cast<std::string>(&a) == nullptr);
     }
 }
-#endif  // ANY_TEST_6_ANY_CAST_NON_CONST
+#endif  // ANY_TEST_06_ANY_CAST_NON_CONST
 
-#ifdef ANY_TEST_7_ANY_CAST_CONST
+#ifdef ANY_TEST_07_ANY_CAST_CONST
 TEST_CASE("any_cast<>(any*) works") {
     SUBCASE("nullptr to different types") {
         const cls_26::any *a = nullptr;
@@ -251,4 +251,4 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(cls_26::any_cast<std::string>(&a) == nullptr);
     }
 }
-#endif  // ANY_TEST_7_ANY_CAST_CONST
+#endif  // ANY_TEST_07_ANY_CAST_CONST

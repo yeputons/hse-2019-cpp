@@ -15,9 +15,9 @@
 #define ANY_TEST_05_COPYABLE
 #define ANY_TEST_06_ANY_CAST_NON_CONST
 #define ANY_TEST_07_ANY_CAST_CONST
-#define ANY_CAST_08_ANY_CAST_VAL
-#define ANY_CAST_09_ANY_CAST_RREF
-#define ANY_CAST_10_ANY_CAST_LREF
+#define ANY_TEST_08_ANY_CAST_VAL
+#define ANY_TEST_09_ANY_CAST_RREF
+#define ANY_TEST_10_ANY_CAST_LREF
 
 #ifdef ANY_TEST_00_INIT
 TEST_CASE("Default-initialize any") {
@@ -313,7 +313,7 @@ TEST_CASE("any_cast<>(any*) works") {
 }
 #endif  // ANY_TEST_07_ANY_CAST_CONST
 
-#ifdef ANY_CAST_08_ANY_CAST_VAL
+#ifdef ANY_TEST_08_ANY_CAST_VAL
 static_assert(std::is_convertible_v<cls_26::bad_any_cast&, std::logic_error&>);
 
 TEST_CASE("any_cast<>(any&) and any_cast<>(const any&) work") {
@@ -370,9 +370,9 @@ TEST_CASE("any_cast<>(any&) and any_cast<>(const any&) work") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_08_ANY_CAST_VAL
+#endif  // ANY_TEST_08_ANY_CAST_VAL
 
-#ifdef ANY_CAST_09_ANY_CAST_RREF
+#ifdef ANY_TEST_09_ANY_CAST_RREF
 TEST_CASE("any_cast<T>(any&&) works and moves from") {
     struct MovableFrom {
         bool moved = false, moved_from = false;
@@ -417,9 +417,9 @@ TEST_CASE("any_cast<T>(any&&) works and moves from") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_09_ANY_CAST_REF
+#endif  // ANY_TEST_09_ANY_CAST_REF
 
-#ifdef ANY_CAST_10_ANY_CAST_LREF
+#ifdef ANY_TEST_10_ANY_CAST_LREF
 TEST_CASE("any_cast<T&>(any)") {
     SUBCASE("any to int&") {
         cls_26::any a = 10;
@@ -442,4 +442,4 @@ TEST_CASE("any_cast<T&>(any)") {
         CHECK_THROWS_AS(cls_26::any_cast<std::string&>(a), const cls_26::bad_any_cast &);
     }
 }
-#endif  // ANY_CAST_10_ANY_CAST_LREF
+#endif  // ANY_TEST_10_ANY_CAST_LREF

@@ -23,8 +23,9 @@ struct any {
     template<typename T>
     any(const T &object) : data(std::make_unique<any_data<T>>(object)) {}
 
-    void operator=(any other) {
+    any& operator=(any other) {
         data.swap(other.data);
+        return *this;
     }
 
     const std::type_info& type() const {

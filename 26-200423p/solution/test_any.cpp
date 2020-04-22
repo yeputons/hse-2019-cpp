@@ -143,6 +143,9 @@ TEST_CASE("any is move-assignable") {
     b = std::move(a);  // non-empty <-- empty
     CHECK(b.type() == typeid(void));
     CHECK(a.type() == typeid(void));
+
+    cls_26::any &bres = b = std::move(a);
+    CHECK(&bres == &b);
 }
 #endif  // ANY_TEST_04_MOVABLE
 
@@ -186,6 +189,9 @@ TEST_CASE("std::swap<any> is copy-constructible") {
     b = d;  // non-empty <-- empty
     CHECK(b.type() == typeid(void));
     CHECK(d.type() == typeid(void));
+
+    cls_26::any &bres = b = d;
+    CHECK(&bres == &b);
 }
 #endif  // ANY_TEST_05_COPYABLE
 

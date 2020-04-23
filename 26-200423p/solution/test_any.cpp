@@ -236,7 +236,7 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(*ptr == 20);
 
         int *ptr2 = cls_26::any_cast<int>(&a);
-        CHECK(ptr2 == ptr2);
+        CHECK(ptr2 == ptr);
     }
     SUBCASE("any to std::string") {
         cls_26::any a = std::string("foo");
@@ -248,7 +248,7 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(*ptr == "foox");
 
         std::string *ptr2 = cls_26::any_cast<std::string>(&a);
-        CHECK(ptr2 == ptr2);
+        CHECK(ptr2 == ptr);
     }
 
     SUBCASE("any to int erroneously") {
@@ -292,7 +292,7 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(*ptr == 10);
 
         const int *ptr2 = cls_26::any_cast<int>(&a);
-        CHECK(ptr2 == ptr2);
+        CHECK(ptr2 == ptr);
     }
     SUBCASE("any to std::string") {
         const cls_26::any a = std::string("foo");
@@ -302,7 +302,7 @@ TEST_CASE("any_cast<>(any*) works") {
         CHECK(*ptr == "foo");
 
         const std::string *ptr2 = cls_26::any_cast<std::string>(&a);
-        CHECK(ptr2 == ptr2);
+        CHECK(ptr2 == ptr);
     }
 
     SUBCASE("any to int erroneously") {

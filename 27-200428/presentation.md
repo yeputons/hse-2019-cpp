@@ -151,7 +151,7 @@ struct iterator_traits {  // Общий случай
 template<typename T>
 struct iterator_traits<T*> {  // Частный случай
     using value_type = T;
-    using difference_type = std::size_t;
+    using difference_type = std::ssize_t;
 };
 ```
 
@@ -275,20 +275,16 @@ static_assert(fac_v<int, 5> == 120);
 * `std::remove_const` (уже видели)
 * ```c++
   template<typename, typename> struct is_same : false_type {};
-  template<typename T>         struct is_same<T, T> : false_type {
-     foo;
-  };
+  template<typename T>         struct is_same<T, T> : true_type {};
   // is_same_v тоже есть
   ```
-* `is_convertible<From, To>` — можно ли сконвертировать `T` в `U` неявно?
-  *
-    ```c++
+* `is_convertible<From, To>` — можно ли сконвертировать `From` в `To` неявно?
+  * ```c++
     To foo() { return /*From{}*/; }
     ```
 * `is_nothrow_convertible<T, U>` — а если `noexcept`?
 * `is_constructible<T, A, B>` — можно ли построить `T` из `A` и `B`?
-  *
-    ```c++
+  * ```c++
     T foo(/*A{}*/, /*B{}*/);
     ```
 
@@ -357,12 +353,12 @@ namespace std {
 ```c++
 // Библиотека
 template<typename T> struct serialization_traits {
-    void serialize(ostream &os, const T &x) {      x.serialize(os); }
-    T deserialize(ostream &is)              { T x; x.deserialize(is); return x; }
+    static void serialize(ostream &os, const T &x) {      x.serialize(os); }
+    static T deserialize(ostream &is)              { T x; x.deserialize(is); return x; }
 };
 template<> struct serialization_traits<int> {
-    void serialize(ostream &os, int x) { os.write(....); }
-    int deserialize(istream &is)       { int x; is.read(....); return x; }
+    static void serialize(ostream &os, int x) { os.write(....); }
+    static int deserialize(istream &is)       { int x; is.read(....); return x; }
 };
 // Полезные функции, работают через serialization_traits
 template<typename T>
@@ -375,11 +371,11 @@ void saveToFile(string fileName, T data) {
 В пользовательском коде можем обернуть даже "не свой" тип:
 ```c++
 template<typename T>
-template<> struct serialization_trait<vector<T>> {
-    void serialize(ostream &os, const vector<T> &data) {
-        serialization_trait<size_t>::serialize(os, data.size());
+struct serialization_traits<vector<T>> {
+    static void serialize(ostream &os, const vector<T> &data) {
+        serialization_traits<size_t>::serialize(os, data.size());
         for (const auto &item : data)
-            serialization_trait<T>::serialize(os, item);
+            serialization_traits<T>::serialize(os, item);
     }
 };
 saveToFile("foo.txt", std::vector<int>{1, 2, 3, 4}); // Работает!
@@ -446,7 +442,7 @@ template<typename T> struct optional {
 ## 4.1.3. Применение `noexcept`
 Полезно для `vector` со строгой гарантией исключений.
 
-Если у элементов `is_nothrow_move_assignable`, то можно перевыделять буфер
+Если у элементов `is_nothrow_move_constructible`, то можно перевыделять буфер
 без копирований:
 
 ```c++
@@ -465,7 +461,7 @@ void increase_buffer() {
 void increase_buffer() {
     vector_holder new_data = allocate(2 * capacity);
     for (size_t i = 0; i < len; i++)
-        new (new_data + i) T(std::move_if_noexcept(data[i]);
+        new (new_data + i) T(std::move_if_noexcept(data[i]));
     data.swap(new_data);
 }
 ```
@@ -492,7 +488,7 @@ constexpr bool is_nothrow_move_assignable_v = noexcept(
 Функция `std::declval<T>()` создаёт значение любого типа:
 ```c++
 template<typename T>
-static constexpr is_nothrow_move_constructible_v = noexcept(
+static constexpr is_nothrow_move_assignable_v = noexcept(
     std::declval<T&>() = std::declval<T/*&&*/>()
 );
 ```
@@ -526,8 +522,8 @@ static constexpr is_nothrow_move_constructible_v = noexcept(
 ```c++
 int a = 10; int &b = a;
 struct { int& field; } c{a};
-decltype(x) x = a;              // int x = a;
-decltype(y) y = b;              // int& y = b;
+decltype(a) x = a;              // int x = a;
+decltype(b) y = b;              // int& y = b;
 decltype(s.field) z = c.field;  // int& z = c.field;
 ```
 
@@ -542,8 +538,8 @@ Foo&& func3();
 Foo a;
 // ....
 decltype(func1()) x = func1();  // prvalue, Foo x = func1();
-decltype(func2()) y = func1();  // lvalue,  Foo &y = func2();
-decltype(func3()) z = func1();  // xvalue,  Foo &&z = func3();
+decltype(func2()) y = func2();  // lvalue,  Foo &y = func2();
+decltype(func3()) z = func3();  // xvalue,  Foo &&z = func3();
 decltype(std::move(a))  v2 = std::move(a);  // xvalue,  Foo &&v2 = std::move(a);
 decltype(Foo{})         v3 = Foo{};         // prvalue, Foo v3 = Foo{};
 ```
@@ -751,7 +747,7 @@ struct S2 : S { int z = 3; };
 S2 s2;
 assert(s2.*a == 2);  // Можно пользоваться указателем из родителя.
 int (S2::*d) = a;  // Можно неявно преобразовать типы.
-assert(s2.*d == 1);
+assert(s2.*d == 2);
 IntMemberOfS e = static_cast<IntMemberOfS>(d);  // Можно явно.
 ```
 

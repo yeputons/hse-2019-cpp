@@ -29,14 +29,3 @@ http://artlang.net/post/konteyner-ssylok-c++-std-reference_wrapper/
   * `return (x)` vs `return x;`
   * Возвращаемый тип — void? Можно делать return. Но нельзя объявить переменную типа void.
   * Решение: `if constexpr` + `std::is_same_v<void>`
-
-# Parameter pack (variadic template)
-Задача: много параметров в perfect forwarding
-Синтаксис, группировка, sizeof…
-БУДЕТ ПОТОМ: работа с индексами и более сложная распаковка-запаковка, несколько parameter pack
-
-# Что можно получить
-* `forward_as_tuple` (и понять, почему типы именно такие), `std::apply`, `std::invoke`
-* Можно сделать мок: запоминает все вызовы, потом в тесте проверили.
-* Теперь можно сделать объект `log`, который имеет `operator()` и логирует все вызовы и аргументы
-  (если они форматируемые), при этом делает perfect forward и сам следит за вложенностью отступов.

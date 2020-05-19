@@ -10,8 +10,9 @@
 #define OPTIONAL_TEST_03_RESET
 #define OPTIONAL_TEST_04_MOVABLE
 #define OPTIONAL_TEST_05_COPYABLE
-#define OPTIONAL_TEST_06_EMPLACE_1
-#define OPTIONAL_TEST_07_EMPLACE
+#define OPTIONAL_TEST_06_EMPLACE_1_BY_VALUE
+#define OPTIONAL_TEST_07_EMPLACE_1
+#define OPTIONAL_TEST_08_EMPLACE
 
 #ifdef OPTIONAL_TEST_01_INIT
 TEST_CASE("Default-initialize optional") {
@@ -174,16 +175,52 @@ TEST_CASE("optional is copyable") {
 }
 #endif  // OPTIONAL_TEST_05_COPYABLE
 
-#ifdef OPTIONAL_TEST_06_EMPLACE_1
-TEST_CASE("emplace1ByValue() works") {
+#ifdef OPTIONAL_TEST_06_EMPLACE_1_BY_VALUE
+TEST_CASE("emplace() works with std::string") {
     cls_29::optional<std::string> x;
-    x.emplace1ByValue("hello world");
+    x.emplace("hello world");
     REQUIRE(x.has_value());
     CHECK(x.value() == "hello world");
 }
-#endif  // OPTIONAL_TEST_06_EMPLACE_1
 
-#ifdef OPTIONAL_TEST_07_EMPLACE
+TEST_CASE("emplace() works with 1 argument by-value") {
+    struct S {
+        bool initialized = false;
+        S(const char*) : initialized(true) {}
+    };
+    cls_29::optional<S> x;
+    x.emplace("hello world");
+    REQUIRE(x.has_value());
+    CHECK(x.value().initialized);
+}
+#endif  // OPTIONAL_TEST_06_EMPLACE_1_BY_VALUE
+
+#ifdef OPTIONAL_TEST_07_EMPLACE_1
+TEST_CASE("emplace() correctly preserves category of 1 argument") {
+    struct S {
+        int constructedBy = 0;
+        S(int&) : constructedBy(1) {}
+        S(int&&) : constructedBy(2) {}
+    };
+
+    cls_29::optional<S> x;
+    int a = 10;
+
+    SUBCASE("int&") {
+        x.emplace(a);
+        REQUIRE(x.has_value());
+        CHECK(x.value().constructedBy == 1);
+    }
+
+    SUBCASE("int&&") {
+        x.emplace(std::move(a));
+        REQUIRE(x.has_value());
+        CHECK(x.value().constructedBy == 2);
+    }
+}
+#endif  // OPTIONAL_TEST_07_EMPLACE_1
+
+#ifdef OPTIONAL_TEST_08_EMPLACE
 TEST_CASE("emplace() works with 1 argument") {
     cls_29::optional<std::string> x;
     x.emplace("hello world");
@@ -198,7 +235,7 @@ TEST_CASE("emplace() works with 2 argument") {
     CHECK(x.value() == std::string(10, 'x'));
 }
 
-TEST_CASE("emplace() correctly preserves category") {
+TEST_CASE("emplace() correctly preserves category of 2 arguments") {
     struct S {
         int constructedBy = 0;
         S(int&, int&) : constructedBy(1) {}
@@ -208,7 +245,7 @@ TEST_CASE("emplace() correctly preserves category") {
     };
 
     cls_29::optional<S> x;
-    int a = 1, b = 2;
+    int a = 10, b = 20;
 
     SUBCASE("int&, int&") {
         x.emplace(a, b);
@@ -234,4 +271,4 @@ TEST_CASE("emplace() correctly preserves category") {
         CHECK(x.value().constructedBy == 4);
     }
 }
-#endif  // OPTIONAL_TEST_07_EMPLACE
+#endif  // OPTIONAL_TEST_08_EMPLACE

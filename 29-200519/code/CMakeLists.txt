@@ -22,3 +22,5 @@ add_executable(02-perfect-08-decltype-auto 02-perfect/08-decltype-auto.cpp)
 add_executable(03-variadic-01-syntax 03-variadic/01-syntax.cpp)
 add_executable(03-variadic-02-perfect 03-variadic/02-perfect.cpp)
 add_executable(03-variadic-03-perfect-lambda 03-variadic/03-perfect-lambda.cpp)
+
+add_executable(04-examples-01-forward-as-tuple 04-examples/01-forward-as-tuple.cpp)

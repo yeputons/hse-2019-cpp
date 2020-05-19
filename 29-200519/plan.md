@@ -22,6 +22,9 @@ http://artlang.net/post/konteyner-ssylok-c++-std-reference_wrapper/
   * Forwarding reference, reference collapsing
   * Perfect forwarding
 * Отличия конвенции от копирования всех аргументов, когда что применять
+  * Тут всегда аргументы по ссылке: либо lvalue, либо rvalue
+  * Если надо вызвать "сейчас", то perfect forwarding. Если "потом", то лучше всё по значению и требовать ref/cref,
+    чтобы огребать со временем жизни явно.
 * decltype/decltype(auto) для возвращаемого типа и вообще (см. количество скобочек).
   * `return (x)` vs `return x;`
   * Возвращаемый тип — void? Можно делать return. Но нельзя объявить переменную типа void.

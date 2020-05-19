@@ -10,4 +10,4 @@
 # Советы
 1. В первом тесте не требуется ни perfect forwarding, ни variadic. Общее изменение — одна строчка.
 2. Дальше появляется perfect forwarding. Общее изменение — две строчки.
-3. Дальше появляются variadic templates/parameter packs. Общее изменение — две строчки.
+3. Дальше появляются variadic templates/parameter packs. Общее изменение — три строчки.

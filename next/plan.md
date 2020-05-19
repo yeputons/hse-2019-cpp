@@ -25,6 +25,11 @@
     * https://blog.panicsoftware.com/friends-and-where-to-find-them/
 * Определение метода класса вне класса, который возвращает вложенный класс (`HuffmanTree::Node HuffmanTree::foo()`) — удобно через auto
 * `thread_local` переменные
+* Ссылки и константы в полях. Внутри контейнеров, пар, кортежей, structured binding, своих шаблонов. Что, когда, как.
+  * Const tuple<int&> хранит внутри себя ссылку на неконстантный объект. Плохо играет со structured binding. Примерно как `const tuple<int*>`: https://stackoverflow.com/a/49309088/767632
+* Распад аргументов (надо при сохранении в поля)
+  * `std::array` (не decay’ится)
+  * `decay_t` вместо `remove_cvref`
 
 ## Метапрограммирование
 1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать

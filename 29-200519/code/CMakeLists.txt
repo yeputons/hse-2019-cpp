@@ -18,3 +18,7 @@ add_executable(02-perfect-05-timed-ref-perfect 02-perfect/05-timed-ref-perfect.c
 add_executable(02-perfect-06-timed-exceptions 02-perfect/06-timed-exceptions.cpp)
 add_executable(02-perfect-07-timed-retval 02-perfect/07-timed-retval.cpp)
 add_executable(02-perfect-08-decltype-auto 02-perfect/08-decltype-auto.cpp)
+
+add_executable(03-variadic-01-syntax 03-variadic/01-syntax.cpp)
+add_executable(03-variadic-02-perfect 03-variadic/02-perfect.cpp)
+add_executable(03-variadic-03-perfect-lambda 03-variadic/03-perfect-lambda.cpp)

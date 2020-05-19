@@ -2,6 +2,7 @@
 #include "optional.h"  // Test double inclusion
 
 #include "doctest.h"
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -193,6 +194,13 @@ TEST_CASE("emplace() works with 1 argument by-value") {
     REQUIRE(x.has_value());
     CHECK(x.value().initialized);
 }
+
+TEST_CASE("emplace() works with 1 move-only argument") {
+    cls_29::optional<std::unique_ptr<int>> x;
+    x.emplace(std::unique_ptr<int>());
+    REQUIRE(x.has_value());
+    CHECK(!x.value());
+}
 #endif  // OPTIONAL_TEST_06_EMPLACE_1_BY_VALUE
 
 #ifdef OPTIONAL_TEST_07_EMPLACE_1
@@ -201,6 +209,7 @@ TEST_CASE("emplace() correctly preserves category of 1 argument") {
         int constructedBy = 0;
         S(int&) : constructedBy(1) {}
         S(int&&) : constructedBy(2) {}
+        S(S&&) = delete;
     };
 
     cls_29::optional<S> x;
@@ -242,6 +251,7 @@ TEST_CASE("emplace() correctly preserves category of 2 arguments") {
         S(int&, int&&) : constructedBy(2) {}
         S(int&&, int&) : constructedBy(3) {}
         S(int&&, int&&) : constructedBy(4) {}
+        S(S&&) = delete;
     };
 
     cls_29::optional<S> x;

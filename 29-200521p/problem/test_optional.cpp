@@ -2,6 +2,7 @@
 #include "optional.h"  // Test double inclusion
 
 #include "doctest.h"
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>

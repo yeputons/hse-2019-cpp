@@ -25,14 +25,14 @@ TEST_CASE("Copy-initialize from value") {
     std::string s(10000, 'x');
     cls_29::optional<std::string> x(s);
     REQUIRE(x.has_value());
-    CHECK(x.value() == std::string(10000, 'x'));
-    CHECK(s == std::string(10000, 'x'));
+    CHECK((x.value() == std::string(10000, 'x')));
+    CHECK((s == std::string(10000, 'x')));
 }
 
 TEST_CASE("Move-initialize from value") {
     cls_29::optional<std::string> x(std::string(10000, 'x'));
     REQUIRE(x.has_value());
-    CHECK(x.value() == std::string(10000, 'x'));
+    CHECK((x.value() == std::string(10000, 'x')));
 }
 #endif  // OPTIONAL_TEST_01_INIT
 
@@ -102,7 +102,7 @@ TEST_CASE("optional is movable") {
         cls_29::optional x(std::move(withData));
         CHECK(withData.has_value());
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 
     SUBCASE("move-assignable from data to empty") {
@@ -110,7 +110,7 @@ TEST_CASE("optional is movable") {
         CHECK(&(x = std::move(withData)) == &x);
         CHECK(withData.has_value());
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 
     SUBCASE("move-assignable from data to data") {
@@ -118,7 +118,7 @@ TEST_CASE("optional is movable") {
         CHECK(&(x = std::move(withData)) == &x);
         CHECK(withData.has_value());
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 }
 #endif  // OPTIONAL_TEST_04_MOVABLE
@@ -151,27 +151,27 @@ TEST_CASE("optional is copyable") {
     SUBCASE("copy-constructible from data") {
         cls_29::optional x(withData);
         REQUIRE(withData.has_value());
-        CHECK(withData.value() == std::string(10000, 'x'));
+        CHECK((withData.value() == std::string(10000, 'x')));
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 
     SUBCASE("copy-assignable from data to empty") {
         cls_29::optional<std::string> x;
         CHECK(&(x = withData) == &x);
         REQUIRE(withData.has_value());
-        CHECK(withData.value() == std::string(10000, 'x'));
+        CHECK((withData.value() == std::string(10000, 'x')));
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 
     SUBCASE("copy-assignable from data to data") {
         cls_29::optional x(std::string(10000, 'y'));
         CHECK(&(x = withData) == &x);
         REQUIRE(withData.has_value());
-        CHECK(withData.value() == std::string(10000, 'x'));
+        CHECK((withData.value() == std::string(10000, 'x')));
         REQUIRE(x.has_value());
-        CHECK(x.value() == std::string(10000, 'x'));
+        CHECK((x.value() == std::string(10000, 'x')));
     }
 }
 #endif  // OPTIONAL_TEST_05_COPYABLE
@@ -241,7 +241,7 @@ TEST_CASE("emplace() works with 2 argument") {
     cls_29::optional<std::string> x;
     x.emplace(10, 'x');
     REQUIRE(x.has_value());
-    CHECK(x.value() == std::string(10, 'x'));
+    CHECK((x.value() == std::string(10, 'x')));
 }
 
 TEST_CASE("emplace() correctly preserves category of 2 arguments") {

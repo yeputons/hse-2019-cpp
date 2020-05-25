@@ -164,3 +164,16 @@ int foo() requires std::is_same_v<T, int> {
 В С++20 можно requires expression: `15d-member-detection.cpp`.
 Там можно даже проверять возвращаемый тип.
 Но у нас пока C++20 скорее нет.
+
+# Рассказано на практике
+* Специализации классов по условию:
+  ```c++
+  template<typename, typename = void> struct Foo;
+  template<typename T> struct Foo<T, enable_if_t<Cond_v<T>> {};
+  ```
+* Трюк с `decltype` и запятой для member detection на самом деле работает:
+  ```c++
+  auto foo(T a) -> decltype(a.foo(), bool{}) {
+      return true;
+  }
+  ```

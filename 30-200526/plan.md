@@ -65,7 +65,7 @@
   * Пример: возвращаем умный указатель
   * См. `02-debt/01-arrow.cpp`
 * Время жизни возвращённого по значению временного объекта (как обычно, до конца full expression)
-  * См. `02-debt/02-arrow-lifetime.cpp`
+  * См. `02-debt/02-arrow-lifetime.cpp`, пройтись там отладчиком.
 
 ## Rvalue-ref-qualified functors [00:05]
 * Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
@@ -83,32 +83,157 @@
   * Swap trick работает, потому что стандарт считает `operator=(MyClass)` copy assignment.
   * А вот копирующий конструктор обязан быть нешаблонным и принимать первый аргумент в точности `T&` (возможно, cv-qualified).
 
-# Parameter pack (variadic template) [00:40]
+# Parameter pack (variadic template) [00:25]
 TODO
 
-Задача: много параметров в perfect forwarding
+Всё в основном на слайдах.
 
-* Синтаксис, группировка, sizeof…
+https://en.cppreference.com/w/cpp/language/parameter_pack
 
-Работа с индексами и более сложная распаковка-запаковка, несколько parameter pack.
-Задача: strcat, который выводит в stringstream. Может с разделителем.
+## Variadic template [00:10]
+* Теория и определения для структур/классов
+  * Template parameter pack
+  * Variadic template
+* В основном шаблоне можно ставить parameter pack только в конце.
+  * Чтобы можно было читать параметры от первого к последнему жадно.
+* Оператор `sizeof...()` возвращает `std::size_t`
+* Pack expansion для `typename ...Ts`
+  * `tuple<Ts...>`
+  * `template<Ts ...Values> struct other {}`
+    * В том числе в самом себе
+    * Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
+  * В списке наследников, в member initialization list
+    * Объявлять так члены или переменные нельзя, приходится `std::tuple<>`.
+  * В `using` (начиная с C++17), например, для variant type detector через перегрузки.
+* Получить элемент по номеру никак нельзя, только pattern matching через частичную специализацию.
+* В частичных специализациях
+  * https://en.cppreference.com/w/cpp/language/partial_specialization
+  * Parameter pack может быть где угодно, но:
+    * В `Foo<A, B, C...>` разворачивать можем только последний.
+  * Если разворачиваем parameter pack напрямую, то должен быть последним.
+    * Чтобы можно было читать параметры от первого к последнему жадно.
+  * Если разворачиваем parameter pack где-то внутри, то тоже окей:
+    ```c++
+    template<typename, typename, typename> struct Foo {};
+    template<typename ...As, typename T> struct Foo<T, tuple<As...>, T> {};
+    ```
 
-* Захват parameter pack в лямбду
-* Index_sequence, make_index_sequence
-* Шаблонные лямбды (`auto` и `[]<template>()`), чтобы не делать invokeImpl, а делать IIFE
-* fold expressions с C++17: делаем strcat наивно с operator<<
-* Рекурсия в функциях для сложных вычислений
-* `initializer_list` в конструкторах
+### Реализация `tuple` [00:07]
+TODO: написать код
 
-Реализация tuple через рекурсивное наследование.
+* Делаем рекурсивный `tuple` через pattern matching.
+  * Специализируем пустой `tuple<>`.
+  * Специализируем через `Head` и `Tail`.
+* `tuple_size` делается через `sizeof...`
+* `tuple_element` делается рекурсивно.
+* Для `get<>` надо специализировать функцию `get<>`.
 
-* Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
+### Одновременное разворачивание [00:03]
+```c++
+template<typename ...As, typename ...Bs> struct ZipTuple<tuple<As...>, tuple<Bs...>> {
+    using type = tuple<pair<As, Bs>...>;
+}
+```
+* Если внутри одного pattern есть несколько parameter pack, они должны быть
+  одинакового размера, тогда разворачиваются "параллельно".
 
-## Что можно получить
-* `forward_as_tuple` (и понять, почему типы именно такие), `std::apply`, `std::invoke`
-* Теперь можно сделать объект `log`, который имеет `operator()` и логирует все вызовы и аргументы
-  (если они форматируемые), при этом делает perfect forward и сам следит за вложенностью отступов.
-* Можно сделать мок: запоминает все вызовы, потом в тесте проверили.
-* Распад аргументов (надо при сохранении в поля?)
-  * `std::array` (не decay’ится)
-  * `decay_t` вместо `remove_cvref`
+### Возврат variadic template невозможен [00:05]
+* Попробуем написать `reverse` для `As...` как-нибудь рекурсивно.
+* Проблема: вернуть variadic template "наружу" нельзя. Нельзя сделать псевдоним для parameter pack, как для типов.
+  * `using types = Ts...` не компилируется.
+* Единственный способ — завести себе `template<typename...> struct type_list {};` и дальше работать в его терминах.
+  * `using type = type_list<Ts...>` компилируется
+  * Но дальше надо будет аккуратно делать вспомогательный шаблон для применения `type_list` к другому шаблону вроде `tuple`
+    * В общем случае посмотрите на https://stackoverflow.com/a/38009838/767632
+* Декартово произведение надо эмулировать руками или библиотекой: писать конкатенацию, потом как-то применять `type_list` куда надо.
+  * Пример: пусть мы сделали `Cartesian<type_list<As...>, type_list<Bs...>>`, теперь делаем
+    `Helper<tuple<As>, tuple<Bs>> = HelperImpl<Cartesian_t<tuple_list<As...>, tuple_list<Bs...>>>`,
+    где `HelperImpl<type_list<Xs...>> = tuple<Xs...>`
+
+# Function parameter pack [00:15]
+TODO
+
+Всё в основном на слайдах.
+
+https://en.cppreference.com/w/cpp/language/parameter_pack
+
+## Синтаксис и perfect forwarding [00:10]
+* Если шаблонная функция и есть template parameter pack,
+  то его можно развернуть в function parameter pack: `void foo(Args &&...args)`.
+  * Тут сразу работают pattern.
+  * Пока нельзя сказать "сколько-то аргументов одного типа".
+  * Это не variadic function, variadic function — это из Си.
+* Тут parameter pack можно где угодно, если функция в состоянии его вывести из аргументов
+  * Предназначено для работы как у частичных специализаций: последний параметр точно ок, спрятанный в аргумент точно ок.
+  * `(Args1..., nullptr_t, Args2...)`, например, не справится.
+* Получить элемент по номеру никак нельзя, только pattern matching через перегрузку функций.
+  Или через вспомогательную структуру.
+* Pack expansion для `(Args ...args)` или для `<int ...Args>`:
+  * В качестве параметров в другие функции, инициализацию, `new`, любые круглые скобки.
+    * `make_unique`, `emplace`, сначала без perfect forwarding.
+    * Можно даже с perfect forwarding: `std::forward<Args>(args)...`.
+    * `std::invoke` для функций, намекнуть на указатели на члены
+  * В фигурные скобки (причём порядок вычислений становится определён):
+    ```c++
+    int res[] = {args...};
+    int dummy[] = { (std::cout << args, 0)... };
+    ```
+  * В lambda capture (по значению, ссылке, но не как move, там надо с `tuple`)
+* Идея: можно что угодно сделать рекурсивно (TODO: пример).
+  * Можно вспомогательную структуру `FooHelper` со специализациями.
+  * Можно вспомогательную функцию с перегрузками.
+  * С C++20 можно IIFE с лямбдами `[]<typename>()` (TODO: пример).
+
+## Fold Expressions [00:10]
+В C++17 появилось.
+https://en.cppreference.com/w/cpp/language/fold
+
+* `return (... + args);` скобочки вокруг обязательны.
+  * Обязателен хотя бы один `args`.
+  * `(arg0 + arg1) + arg2`
+  * `(args + ...)` наоборот: `arg0 + (arg1 + arg2)`
+* Ещё можно `(0 + ... + args)`
+  * Работает с пустым `args`
+  * `((0 + arg0) + arg1) + arg2)`
+  * `cout << ... << args` работает как `((cout << arg0) << arg1) << arg2`, как и ожидается.
+    * `cout << args << ...` не сработает (синтаксис не тот)
+    * `cout << args...` не сработает (не аргумент функции)
+* Можно `bool x = (pred(args) || ...);`, скобочки вокруг обязательны.
+* При помощи `,` можно вызывать функцию: `(f(args), ...);`, скобочки вокруг обязательны.
+* Можно создать свой класс, перегрузить для него `+` и так делать цикл
+  * И ещё много чего странного: https://foonathan.net/2020/05/fold-tricks/
+  * Например, так можно вывести аргументы в `cout` через пробел.
+
+## Работа с индексами [00:15]
+Задача: `std::apply(Fn, std::tuple<>)`
+
+* Нам надо `get<0>(t), get<1>(t)` => надо parameter pack `0, 1, 2, ...`.
+  * Исходно его нет => должен появиться => его нам как-то передадут.
+  * Удобнее всего считать, что он уже лежит в специальном контейнере `std::index_sequence` (`std::integer_sequence`).
+    ```c++
+    template<typename ...Args, std::size_t ...Indices>
+    struct ApplyHelper<std::index_sequence<Indices...>, Args...> {
+        template<typename Fn, typename Tuple>
+        static decltype(auto) apply(Fn &&fn, Tuple &&tuple) {
+            return std::forward<Fn>(fn)(std::get<Indices>(std::forward<Tuple>(tuple))...);
+        }
+    };
+    ```
+  * Можно упростить и сказать, что мы пишем функцию и получаем объект типа `integer_sequence` в качестве аргумента:
+    ```c++
+    template<typename Fn, typename Tuple, typename ...Args, std::size_t ...Indices>
+    decltype(auto) apply(Fn &&fn, Tuple &&tuple, type_list<Args...>, index_sequenc<Indices...>) {
+        return std::forward<Fn>(fn)(std::get<Indices>(std::forward<Tuple>(tuple))...);
+    }
+    ```
+  * Дальше можно либо руками создавать рекурсивно (написать код), либо `std::make_index_sequence` (что быстрее).
+  * Начиная с C++20 можно делать не вспомогательную структуру/функцию, а лямбду `[]<std::size_t ...Indices>(....){ .... }()`.
+* `forward_as_tuple` и его отличие от `make_tuple`
+  * Не копирует.
+  * Понять, почему типы именно такие.
+* Теперь можно захватывать parameter pack в лямбду с мувом:
+  ```c++
+  [t = std::forward_as_tuple(std::forward<Args>(args)...)]() {  // Осторожно: надо perfect forward args
+      std::apply(Foo(), std::move(t));  // Осторожно: тут надо move, иначе нельзя делать move из элемента T&& у t.
+  }();
+  ```

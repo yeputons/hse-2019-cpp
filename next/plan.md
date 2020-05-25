@@ -35,6 +35,7 @@
   которая будет приоритетнее `template<typename T> MyClass(const T&)`.
   * Swap trick работает, потому что стандарт разрешает `operator=(MyClass)`.
   * Видимо, надо ооочень аккуратно смотреть на user-defined/user-declared/implicitly defined-deleted, whatever.
+* Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
 
 # Обзор
 ## Метапрограммирование
@@ -44,9 +45,6 @@
   * В чём бонус по сравнению с обычным SFINAE? Смотри think-cell/range, там это используется.
   * https://stackoverflow.com/questions/6917079/tag-dispatch-versus-static-methods-on-partially-specialised-classes
   * http://barendgehrels.blogspot.com/2010/10/tag-dispatching-by-type-tag-dispatching.html
-
-## Аккуратное проектирование API
-* Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
 * type tags (emplace, конструкторы any):
   * `nullopt`
   * `in_place`, `in_place_type` позволяют отличить конструктор копирования от чего-то ещё

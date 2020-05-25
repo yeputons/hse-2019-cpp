@@ -1,15 +1,30 @@
 # Parameter pack (variadic template)
 Задача: много параметров в perfect forwarding
-Синтаксис, группировка, sizeof…
-Работа с индексами и более сложная распаковка-запаковка, несколько parameter pack
+
+* Синтаксис, группировка, sizeof…
+
+Работа с индексами и более сложная распаковка-запаковка, несколько parameter pack.
+Задача: strcat, который выводит в stringstream. Может с разделителем.
+
+* Захват parameter pack в лямбду
+* Index_sequence, make_index_sequence
+* Шаблонные лямбды (`auto` и `[]<template>()`), чтобы не делать invokeImpl, а делать IIFE
+* fold expressions с C++17: делаем strcat наивно с operator<<
+* Рекурсия в функциях для сложных вычислений
+* `initializer_list` в конструкторах
+
 Реализация tuple через рекурсивное наследование.
+
 * Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
 
 ## Что можно получить
 * `forward_as_tuple` (и понять, почему типы именно такие), `std::apply`, `std::invoke`
-* Можно сделать мок: запоминает все вызовы, потом в тесте проверили.
 * Теперь можно сделать объект `log`, который имеет `operator()` и логирует все вызовы и аргументы
   (если они форматируемые), при этом делает perfect forward и сам следит за вложенностью отступов.
+* Можно сделать мок: запоминает все вызовы, потом в тесте проверили.
+* Распад аргументов (надо при сохранении в поля?)
+  * `std::array` (не decay’ится)
+  * `decay_t` вместо `remove_cvref`
 
 # Важные долги для полной картины
 * `friend class`
@@ -64,8 +79,5 @@ https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms
   * https://blog.panicsoftware.com/friends-and-where-to-find-them/
 * Ссылки и константы в полях. Внутри контейнеров, пар, кортежей, structured binding, своих шаблонов. Что, когда, как.
   * Const tuple<int&> хранит внутри себя ссылку на неконстантный объект. Плохо играет со structured binding. Примерно как `const tuple<int*>`: https://stackoverflow.com/a/49309088/767632
-* Распад аргументов (надо при сохранении в поля)
-  * `std::array` (не decay’ится)
-  * `decay_t` вместо `remove_cvref`
 * Если мы делаем свой sfinae detector, то осторожно с ADL при его вызове.
 * Шаблонные параметры конструктора не указать явно?

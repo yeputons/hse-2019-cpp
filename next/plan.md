@@ -2,6 +2,7 @@
 Задача: много параметров в perfect forwarding
 Синтаксис, группировка, sizeof…
 Работа с индексами и более сложная распаковка-запаковка, несколько parameter pack
+Реализация tuple через рекурсивное наследование.
 
 ## Что можно получить
 * `forward_as_tuple` (и понять, почему типы именно такие), `std::apply`, `std::invoke`
@@ -33,12 +34,18 @@
 * Был `dynamic_cast`. А для `shared_ptr` есть аналогичный `dynamic_pointer_cast` (и ещё три аналогичных `*_pointer_cast`).
   Это популярно для умных указателей, если вообще имеет смысл менять тип указателя, не меняя тип владения
   (для `unique_ptr` не имеет).
+* `thread_local` переменные
+
+## Идиомы
+https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms
+
 * CRTP:
   * https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Curiously_Recurring_Template_Pattern
   * Можно реализовать для реализации `struct Point : operators<Point> { bool operator<(..); }`
   * Можно для вынесения любой другой функциональности в общего предка без виртуальных функций.
 * Pimpl для выноса приватных полей и методов из заголовка и сохранения API/ABI. Ценой динамических выделений памяти.
-* `thread_local` переменные
+* Return type resolver (+Builder)
+* Expression templates (например, для linq).
 
 ## Техника
 * Precompiled header для ускорения компиляции

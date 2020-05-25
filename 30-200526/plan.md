@@ -59,21 +59,21 @@
   * Поэтому достаточно сделать `remove_if`. Если не помните — написать руками (`it = l.erase(it)`).
   * Если время есть: но давайте напишем компаратор.
 
-# Долги [00:20]
-## Перегрузка `operator->` [00:05]
-* Перегрузка `operator->` по цепочке
-  * Пример: возвращаем умный указатель
-  * См. `02-debt/01-arrow.cpp`
-* Время жизни возвращённого по значению временного объекта (как обычно, до конца full expression)
-  * См. `02-debt/02-arrow-lifetime.cpp`, пройтись там отладчиком.
-
-## Rvalue-ref-qualified functors [00:05]
-* Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
-  * TODO пример кода
-
-## Мелочи [00:10]
+# Долги [00:10]
 Всё только на слайдах.
 
+* Перегрузка `operator->` работает по цепочке (`02-debt/01-arrow.cpp`).
+  * Время жизни возвращаемого объекта — до конца full expression (`02-debt/01-arrow-lifetime.cpp`, там стоит пройтись отладчиком).
+* Функтор тоже надо perfect forward, не только аргументы:
+  ```c++
+  struct Foo {
+      void operator(int) && {};
+  };
+  template<typename Fn, typename Arg>
+  decltype(auto) wrap(Fn &&fn, Arg &&arg) {
+      return std::forward<Fn>(fn)(std::forward<Arg>(arg));
+  }
+  ```
 * Precompiled header для ускорения компиляции
 * `friend class`
 * `thread_local` переменные (работают как `static`)
@@ -137,7 +137,7 @@ template<typename ...As, typename ...Bs> struct ZipTuple<tuple<As...>, tuple<Bs.
 * Если внутри одного pattern есть несколько parameter pack, они должны быть
   одинакового размера, тогда разворачиваются "параллельно".
 
-### Возврат variadic template невозможен [00:05]
+### Возврат parameter pack невозможен [00:05]
 * Попробуем написать `reverse` для `As...` как-нибудь рекурсивно.
 * Проблема: вернуть variadic template "наружу" нельзя. Нельзя сделать псевдоним для parameter pack, как для типов.
   * `using types = Ts...` не компилируется.
@@ -150,7 +150,7 @@ template<typename ...As, typename ...Bs> struct ZipTuple<tuple<As...>, tuple<Bs.
     `Helper<tuple<As>, tuple<Bs>> = HelperImpl<Cartesian_t<tuple_list<As...>, tuple_list<Bs...>>>`,
     где `HelperImpl<type_list<Xs...>> = tuple<Xs...>`
 
-# Function parameter pack [00:15]
+# Function parameter pack [00:35]
 TODO
 
 Всё в основном на слайдах.

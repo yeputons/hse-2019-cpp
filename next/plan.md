@@ -31,6 +31,11 @@
   * В чём бонус по сравнению с обычным SFINAE? Смотри think-cell/range, там это используется.
   * https://stackoverflow.com/questions/6917079/tag-dispatch-versus-static-methods-on-partially-specialised-classes
   * http://barendgehrels.blogspot.com/2010/10/tag-dispatching-by-type-tag-dispatching.html
+* type tags (emplace, конструкторы any):
+  * `nullopt`
+  * `in_place`, `in_place_type` позволяют отличить конструктор копирования от чего-то ещё
+  * Парсер-комбинаторы: `many(many(...))` будет копировать, если `many` — класс. А вот если функция, то всё честно.
+* Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
 * Перегрузка `operator->` по цепочке, время жизни возвращённого по значению временного объекта
 * Друзья
   * `friend class`
@@ -44,6 +49,7 @@
 * Распад аргументов (надо при сохранении в поля)
   * `std::array` (не decay’ится)
   * `decay_t` вместо `remove_cvref`
+* Precompiled header для ускорения компиляции
 
 ## Метапрограммирование
 1. clang + enable_if = хорошие сообщения об ошибках. проверить, показать

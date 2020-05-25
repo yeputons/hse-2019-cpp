@@ -14,6 +14,7 @@ class unique_ptr {
     T *data = nullptr;
 public:
     unique_ptr() {}
+    explicit unique_ptr(T *data_) : data(data_) {}
     unique_ptr(const unique_ptr &) = delete;
     unique_ptr(unique_ptr &&other) : data(other.data) {
         other.data = nullptr;
@@ -29,14 +30,22 @@ public:
     T& operator*() { return *data; }
     const T& operator*() const { return *data; }
 
-    // START SOLUTIOn
+    // START Доп. задание на тэги конструктора, но так с unique_ptr не делают
     template<typename ...Args>
     unique_ptr(unique_ptr_new_t, Args &&...args)
         : data(new T(std::forward<Args>(args)...))
     {}
-    // END SOLUTION
+    // END
 };
 
+// START Задание 1
+template<typename T, typename ...Args>
+auto make_unique(Args &&...args) {
+    return unique_ptr(new T(std::forward<Args>(args)...));
+}
+// END
+
+// START Задание 2
 template<typename ...Args>
 std::string concat(const Args &...args) {
     // START SOLUTION
@@ -45,7 +54,9 @@ std::string concat(const Args &...args) {
     return s.str();
     // END SOLUTION
 }
+// END
 
+// START Задание 3
 void concat_separated_impl(bool, std::stringstream &, std::string_view) {
 }
 
@@ -62,7 +73,9 @@ std::string concat_separated(std::string_view sep, const Args &...args) {
     concat_separated_impl(/*first=*/true, s, sep, args...);
     return s.str();
 }
+// END
 
+// START Дополнительное задание
 template<typename ...Args>
 std::string concat_separated(std::string_view sep, const std::tuple<Args...> &t) {
     return std::apply(
@@ -70,15 +83,19 @@ std::string concat_separated(std::string_view sep, const std::tuple<Args...> &t)
         std::tuple_cat(std::tuple(sep), t)
     );
 }
+// END
 
+// START Дополнительное задание
 template<typename ...Args1, typename ...Args2>
 auto zip(const std::tuple<Args1...> &t1, const std::tuple<Args2...> &t2) {
     static_assert(sizeof...(Args1) == sizeof...(Args2));
-    return [&]<std::size_t ...Indices>(std::index_sequence<Indices...>){
+    return [&]<std::size_t ...Indices>(std::index_sequence<Indices...>) {
         return std::tuple(std::pair(std::get<Indices>(t1), std::get<Indices>(t2))...);
     }(std::make_index_sequence<sizeof...(Args1)>());
 }
+// END
 
+// START Дополнительное задание
 template<typename T> decltype(auto) apply_vector_helper(T v) { return v; }
 
 template<typename R, typename ...Args, typename T>
@@ -91,7 +108,9 @@ decltype(auto) apply_vector(R(*fn)(Args...), const std::vector<T> &vec) {
         return std::invoke(fn, vec[Indices]...);
     }(std::make_index_sequence<sizeof...(Args)>());
 }
+// END
 
+// START Дополнительное задание
 template<typename T, typename U, typename ...Args>
 decltype(auto) get_arg(U &&v, Args &&...args) {
     if constexpr (std::is_same_v<T&&, U&&>) {
@@ -105,6 +124,7 @@ template<typename R, typename ...EArgs, typename ...RArgs>
 R reorder_args(R(*fn)(EArgs...), RArgs &&...args) {
     return fn(get_arg<EArgs>(std::forward<RArgs>(args)...)...);
 }
+// END
 
 void foo(int a, char b, std::string c, int &d) {
     std::cout << "a=" << a << "; ";
@@ -122,18 +142,20 @@ void bar(int a, int b, int c, int d) {
 
 template<typename...> struct TD;
 
+// START Задание 4
 template<typename Fn, typename R, typename ...Args>
-struct Mock {
+struct Memorizer {
     Fn fn;
     std::vector<std::tuple<R, std::remove_reference_t<Args>...>> calls;
 
-    Mock(Fn fn_) : fn(fn_) {}
+    Memorizer(Fn fn_) : fn(fn_) {}
     R operator()(Args ...args) {
         calls.emplace_back(fn(args...), args...);
         return std::get<0>(calls.back());
     }
 };
-template<typename R, typename ...Args> Mock(R(*)(Args...)) -> Mock<R(*)(Args...), R, Args...>;
+template<typename R, typename ...Args> Memorizer(R(*)(Args...)) -> Memorizer<R(*)(Args...), R, Args...>;  // Возможно, функцию вместо deduction guide.
+// END
 
 int my_func(int &a, int b, int arr[]) {
     return a * 10 + b;
@@ -141,6 +163,8 @@ int my_func(int &a, int b, int arr[]) {
 
 int main() {
     unique_ptr<std::string> xxx(unique_ptr_new, 10, 'x');
+    std::cout << *xxx << "\n";
+    auto yyy = make_unique<std::string>(10, 'x');
     std::cout << *xxx << "\n";
 
     std::cout << "|" << concat("hello", 10, "world") << "|\n";
@@ -160,7 +184,7 @@ int main() {
     );
 
     {
-        Mock m(my_func);
+        Memorizer m(my_func);
         int a = 10;
         int arr[10];
         std::cout << m(a, 2, arr) << "\n";

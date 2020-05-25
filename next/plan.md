@@ -1,45 +1,5 @@
-# Parameter pack (variadic template)
-Задача: много параметров в perfect forwarding
-
-* Синтаксис, группировка, sizeof…
-
-Работа с индексами и более сложная распаковка-запаковка, несколько parameter pack.
-Задача: strcat, который выводит в stringstream. Может с разделителем.
-
-* Захват parameter pack в лямбду
-* Index_sequence, make_index_sequence
-* Шаблонные лямбды (`auto` и `[]<template>()`), чтобы не делать invokeImpl, а делать IIFE
-* fold expressions с C++17: делаем strcat наивно с operator<<
-* Рекурсия в функциях для сложных вычислений
-* `initializer_list` в конструкторах
-
-Реализация tuple через рекурсивное наследование.
-
-* Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
-
-## Что можно получить
-* `forward_as_tuple` (и понять, почему типы именно такие), `std::apply`, `std::invoke`
-* Теперь можно сделать объект `log`, который имеет `operator()` и логирует все вызовы и аргументы
-  (если они форматируемые), при этом делает perfect forward и сам следит за вложенностью отступов.
-* Можно сделать мок: запоминает все вызовы, потом в тесте проверили.
-* Распад аргументов (надо при сохранении в поля?)
-  * `std::array` (не decay’ится)
-  * `decay_t` вместо `remove_cvref`
-
-# Важные долги для полной картины
-* `friend class`
-* `thread_local` переменные
-* Определение метода класса вне класса, который возвращает вложенный класс (`HuffmanTree::Node HuffmanTree::foo()`) — удобно через auto
-* Перегрузка `operator->` по цепочке, время жизни возвращённого по значению временного объекта
-* Нельзя шаблонизировать конструкторы/операторы копирования/присваивания: компилятор сгенерирует версию по умолчанию,
-  которая будет приоритетнее `template<typename T> MyClass(const T&)`.
-  * Swap trick работает, потому что стандарт разрешает `operator=(MyClass)`.
-  * Видимо, надо ооочень аккуратно смотреть на user-defined/user-declared/implicitly defined-deleted, whatever.
-* Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
-
 # Обзор
 ## Метапрограммирование
-* declval + comma operator in return value
 * tag dispatching вместо SFINAE (можно как специализацию структур, можно by-value параметр функции)
   * Можно по true_type/false_type.
   * В чём бонус по сравнению с обычным SFINAE? Смотри think-cell/range, там это используется.
@@ -51,7 +11,6 @@
   * Парсер-комбинаторы: `many(many(...))` будет копировать, если `many` — класс. А вот если функция, то всё честно.
 
 ## Не про метапрограммирование
-* Precompiled header для ускорения компиляции
 * User defined literals, не на экзамен: https://en.cppreference.com/w/cpp/language/user_literal
   * Пример из chrono: `auto duration = 10s` (секунд).
   * Пример для автовывода типов: `split(....) == vector{"foo"sv}` (иначе был бы `vector<char*>`).

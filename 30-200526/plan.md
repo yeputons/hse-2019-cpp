@@ -60,26 +60,28 @@
   * Если время есть: но давайте напишем компаратор.
 
 # Долги [00:20]
-TODO
-
 ## Перегрузка `operator->` [00:05]
 * Перегрузка `operator->` по цепочке
   * Пример: возвращаем умный указатель
+  * См. `02-debt/01-arrow.cpp`
 * Время жизни возвращённого по значению временного объекта (как обычно, до конца full expression)
+  * См. `02-debt/02-arrow-lifetime.cpp`
 
 ## Rvalue-ref-qualified functors [00:05]
 * Функтор тоже надо perfect forward! rvalue-ref-qualified, например.
+  * TODO пример кода
 
 ## Мелочи [00:10]
+Всё только на слайдах.
+
 * Precompiled header для ускорения компиляции
 * `friend class`
 * `thread_local` переменные (работают как `static`)
 * Определение метода класса вне класса, который возвращает вложенный класс (`HuffmanTree::Node HuffmanTree::foo()`) — удобно через auto
 * Нельзя шаблонизировать конструкторы/операторы копирования/присваивания: компилятор сгенерирует версию по умолчанию,
   которая будет приоритетнее `template<typename T> MyClass(const T&)`.
-  * Swap trick работает, потому что стандарт разрешает `operator=(MyClass)`.
-  * Видимо, надо ооочень аккуратно смотреть на user-defined/user-declared/implicitly defined-deleted, whatever. TODO
-* declval + comma operator in return value
+  * Swap trick работает, потому что стандарт считает `operator=(MyClass)` copy assignment.
+  * А вот копирующий конструктор обязан быть нешаблонным и принимать первый аргумент в точности `T&` (возможно, cv-qualified).
 
 # Parameter pack (variadic template) [00:40]
 TODO

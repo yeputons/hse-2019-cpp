@@ -41,6 +41,7 @@
   * А вот из `Base` в `Foo` так просто через `static_cast` нельзя, потому что виртуальное наследование.
     * Обязаны делать `dynamic_cast<const Foo*>`. К счастью, C-style тут не скомпилируется.
     * При этом через `void*` или `reinterpret` — ошибка.
+    * Можно было понять, тут надо чисто сишный каст перевести и написать `reinterpret_cast`. Надо опросить, кто так думал и поставить балл.
   * Аналогично с cross-cast от `Foo` в `Bar`: только `dynamic_cast`.
     * Тут C-style уже скомпилируется как `reinterpret`, будет UB.
   * Из `Foo` в `Derived` уже можно `static_cast`.
@@ -85,8 +86,6 @@
 * Pimpl: что такое, когда надо, как гуглить, идея.
 
 # Parameter pack (variadic template) [00:25]
-TODO
-
 Всё в основном на слайдах.
 
 https://en.cppreference.com/w/cpp/language/parameter_pack
@@ -119,8 +118,6 @@ https://en.cppreference.com/w/cpp/language/parameter_pack
     ```
 
 ### Реализация `tuple` [00:07]
-TODO: написать код
-
 * Делаем рекурсивный `tuple` через pattern matching.
   * Специализируем пустой `tuple<>`.
   * Специализируем через `Head` и `Tail`.
@@ -151,8 +148,6 @@ template<typename ...As, typename ...Bs> struct ZipTuple<tuple<As...>, tuple<Bs.
     где `HelperImpl<type_list<Xs...>> = tuple<Xs...>`
 
 # Function parameter pack [00:35]
-TODO
-
 Всё в основном на слайдах.
 
 https://en.cppreference.com/w/cpp/language/parameter_pack
@@ -179,7 +174,7 @@ https://en.cppreference.com/w/cpp/language/parameter_pack
     int dummy[] = { (std::cout << args, 0)... };
     ```
   * В lambda capture (по значению, ссылке, но не как move, там надо с `tuple`)
-* Идея: можно что угодно сделать рекурсивно (TODO: пример).
+* Идея: можно что угодно сделать рекурсивно (найти i-й элемент, найти минимум, найти int).
   * Можно вспомогательную структуру `FooHelper` со специализациями.
   * Можно вспомогательную функцию с перегрузками.
 

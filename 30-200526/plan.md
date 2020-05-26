@@ -101,7 +101,6 @@ https://en.cppreference.com/w/cpp/language/parameter_pack
 * Pack expansion для `typename ...Ts`
   * `tuple<Ts...>`
   * `template<Ts ...Values> struct other {}`
-    * В том числе в самом себе
     * Синтаксис `<auto ...Params>` и `<auto Param>` с C++17.
   * В списке наследников, в member initialization list
     * Объявлять так члены или переменные нельзя, приходится `std::tuple<>`.

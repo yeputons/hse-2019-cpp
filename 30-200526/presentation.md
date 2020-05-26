@@ -95,7 +95,7 @@ struct HuffmanTree {
     Node foo();
 };
 // До
-HuffmanTree::Bar HuffmanTree::foo() { return Node(); }
+HuffmanTree::Node HuffmanTree::foo() { return Node(); }
 // После
 auto HuffmanTree::foo() -> Node { return Node(); }
 ```
@@ -267,8 +267,9 @@ struct Bar {
     int func(char);  // (2)
 };
 template<typename ...Ts>
-struct Hybrid : Ts... {
+struct Hybrid : Ts... {  // Hybrid : Foo, Bar
     Hybrid() : Ts(10)... {}
+    // Hybrid() : Foo(10), Bar(10) {}
     using Ts::func...;  // С C++17
 };
 Hybrid<Foo, Bar> h;
@@ -309,7 +310,7 @@ template<typename ...Args> struct Bar<Args..., int> {};  // :(
 ## 3.5.1. Реализация своего `std::tuple`
 Надо писать рекурсивно, как односвязный список на Haskell:
 ```haskell
-data List a = Nil | Const a (List a)
+data List a = Nil | Cons a (List a)
 ```
 
 ```c++
@@ -330,7 +331,7 @@ x.tail.tail.head  // compilation error
 
 Вспомогательная метафункция:
 ```c++
-template<typename ...Args> struct tuple_size {};
+template<typename> struct tuple_size {};
 template<typename ...Args>
 struct tuple_size<tuple<Args...>>
     : std::integral_constant<std::size_t, sizeof...(Args)> {};
@@ -351,7 +352,7 @@ struct tuple_element<I, tuple<Head, Tail...>> : tuple_element<I - 1, tuple<Tail.
 };
 // ....
 tuple_element<0, tuple<int, string>> = int
-tuple_element<0, tuple<int, string>> = tuple_element<1, tuple<string>> = string
+tuple_element<1, tuple<int, string>> = tuple_element<0, tuple<string>> = string
 ```
 
 `get<>` тоже рекурсивно:
@@ -429,7 +430,7 @@ template<template<typename...> typename /*F*/, typename /*TypeList*/>
 struct apply_type_list;
 // Реализация
 template<template<typename...> typename F, typename ...Ts>
-struct apply_type_list<F, type_list<Ts>> {
+struct apply_type_list<F, type_list<Ts...>> {
     using type = F<Ts...>;
 };
 typename apply_type_list<tuple, type_list<int, string>>::type == tuple<int, string>
@@ -476,7 +477,7 @@ template<typename T, typename ...Args>
 void wrap(const Args &...args) {
     T x(args...);
     new T(args...);
-    someOtherFunc(args..., 20 args...);
+    someOtherFunc(args..., 20, args...);
 }
 wrap<Foo>();         // T=Foo, Args={},          someOtherFunc(20);
 wrap<Foo>(15, 'x');  // T=Foo, Args={int, char}, someOtherFunc(15, 'x', 20, 15, 'x');
@@ -543,6 +544,8 @@ int dummy[] = { (std::cout << args, 0)... };  // Можно хитрить с op
 [args = std::tuple(std::forward<Args>(args)...)]() { .... }
 ```
 
+Для раскрытия `tuple` можно пользоваться `std::apply`.
+
 ---
 ## 4.2.1. Работа с элементами: вспомогательная структура
 **Получить элемент по номеру нельзя**.
@@ -566,10 +569,12 @@ struct get_impl<I, Head, Tail...> {
 };
 ```
 
+Тут забили на perfect forwarding и константность.
+
 ---
 ## 4.2.2. Работа с элементами: перегрузки
 ```c++
-// getInt("x", 10, "x") == 10
+// getInt("x", 15.0, 10, "x") == 10
 template<typename ...Ts> int getInt(int x, const Ts &...) {
     return x;
 }

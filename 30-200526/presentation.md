@@ -206,3 +206,234 @@ void foo() {
 std::thread t1(foo);  // 10, 11
 std::thread t2(foo);  // 10, 11
 ```
+
+---
+## 3.1. Variadic template: синтаксис
+Можно определить _variadic template_ — шаблон класса, у которого
+в параметрах есть [_template parameter pack_](https://en.cppreference.com/w/cpp/language/parameter_pack):
+
+```c++
+template<typename A, int N, typename ...Ts>
+struct Foo {
+     static constexpr inline std::size_t M = sizeof...(Ts);
+     std::tuple<Ts...> xs;
+     // Ts... xs;  // Так нельзя :(
+};
+Foo<int, 10> f1;                                        // M = 0
+Foo<int, 10, int, int> f2;                              // M = 2
+Foo<int, 10, int, Foo<int, 10, char>, std::string> f3;  // M = 3
+
+template<int ...Ns>
+struct Bar {
+    static constexpr inline std::size_t M = sizeof...(Ns);
+};
+Bar<> b1;            // M = 0
+Bar<10, 20, 30> b1;  // M = 3
+```
+
+* Template parameter pack может быть только последним,
+  чтбы можно было жадно понять, кто к нему относится.
+* Мнемоника: при объявлении `...` пишется слева, при разворачивании
+  (pack expansion) справа.
+
+---
+## 3.2. Variadic template: pack expansion для типов
+```c++
+int func() {}
+
+template<typename ...Ts>
+struct Foo1 {
+    template<Ts ...Values> struct Bar {};
+};
+Foo1<int, int(*)()>::Bar<10, func> x;
+
+// С C++17
+template<auto Value> struct Foo2 {};
+Foo2<10> y;
+
+template<auto ...Values> struct Foo3 {};
+Foo3<10, func, func> z;
+```
+
+---
+## 3.3. Variadic template: pack expansion для базовых классов
+```c++
+struct Foo {
+    Foo(int);
+    int func(int);   // (1)
+};
+struct Bar {
+    Bar(int);
+    int func(char);  // (2)
+};
+template<typename ...Ts>
+struct Hybrid : Ts... {
+    Hybrid() : Ts(10)... {}
+    using Ts::func...;  // С C++17
+};
+Hybrid<Foo, Bar> h;
+// ....
+h.func(10);   // (1)
+h.func('x');  // (2)
+```
+
+---
+## 3.4. Обращение к элементам
+**Получить элемент по номеру нельзя**.
+Только рекурсия [частичных специализаций](https://en.cppreference.com/w/cpp/language/partial_specialization):
+
+```c++
+template<typename .../*Ts*/> struct head {};
+template<typename Head, typename ...Tail>
+struct head<Head, Tail...> {
+    using type = Head;
+};
+```
+
+* В специализациях можно сколько угодно любых parameter pack.
+* При этом если разворачиваем parameter pack, то он должен идти последним.
+  * Чтобы компилятор мог жадно проверить, подходит ли специализация.
+
+```c++
+// Окей
+template<typename, typename, typename>
+struct Foo {};
+template<typename ...As, typename T>
+struct Foo<T, std::tuple<As...>, T> {};
+// Не окей
+template<typename...> struct Bar {};
+template<typename ...Args> struct Bar<Args..., int> {};  // :(
+```
+
+---
+## 3.5.1. Реализация своего `std::tuple`
+Надо писать рекурсивно, как односвязный список на Haskell:
+```haskell
+data List a = Nil | Const a (List a)
+```
+
+```c++
+template<typename ...Args> struct tuple {};
+template<typename T, typename ...Args>
+struct tuple<T, Args...> {
+    T head;
+    tuple<Args...> tail;  // Можно наследование, а не поле.
+};
+// ....
+tuple<int, std::string> x;
+x.head            // int
+x.tail            // tuple<std::string>
+x.tail.head       // std::string
+x.tail.tail       // tuple<>
+x.tail.tail.head  // compilation error
+```
+
+Вспомогательная метафункция:
+```c++
+template<typename ...Args> struct tuple_size {};
+template<typename ...Args>
+struct tuple_size<tuple<Args...>>
+    : std::integral_constant<std::size_t, sizeof...(Args)> {};
+```
+
+---
+## 3.5.2. Реализация `tuple_element` и `get<>`
+```c++
+template<std::size_t, typename /*Tuple*/> struct tuple_element;
+// Базовый случай.
+template<typename Head, typename ...Tail>
+struct tuple_element<0, tuple<Head, Tail...>> {
+    using type = Head;
+};
+// Основной случай.
+template<std::size_t I, typename Head, typename ...Tail>
+struct tuple_element<I, tuple<Head, Tail...>> : tuple_element<I - 1, tuple<Tail...>> {
+};
+// ....
+tuple_element<0, tuple<int, string>> = int
+tuple_element<0, tuple<int, string>> = tuple_element<1, tuple<string>> = string
+```
+
+`get<>` тоже рекурсивно:
+```c++
+template<std::size_t I, typename ...Ts>
+auto get(const tuple<Ts...> &tuple) {  // auto& / tuple&
+    // Можно if constexpr, можно специализация для I = 0.
+    if constexpr (I == 0) return tuple.head;
+    else                  return get<I - 1>(tuple.tail);
+}
+// ....
+tuple<int, string> x;
+get<0>(x) == x.head  // int
+get<1>(x) == get<0>(x.tail) == x.tail.head  // string
+```
+
+---
+## 3.6. Одновременное разворачивание
+Слева от `...` должен находится **pattern**, он разворачивается целиком:
+
+```c++
+template<typename, typename> struct ZipTuple;
+template<typename ...As, typename ...Bs>
+struct ZipTuple<tuple<As...>, tuple<Bs...>> {
+    using type = tuple<pair<As, Bs>...>;
+}
+// ....
+ZipTuple<tuple<int, char>, tuple<char, string>>::type =
+    tuple<
+        pair<int, char>,
+        pair<char, string>
+    >
+```
+
+* Если внутри одного pattern есть несколько parameter pack, они должны быть
+  одинакового размера, тогда разворачиваются "параллельно".
+* Иначе ошибка компиляции.
+
+Написать декартово произведение нельзя, надо эмулировать руками.
+
+---
+## 3.7.1. Возврат parameter pack невозможен
+```c++
+template<typename .../*Ts*/> struct tail {};
+template<typename Head, typename ...Tail>
+struct tail<Head, Tail...> {
+    using types = Tail...;  // Нельзя: внутри структуры могут быть только типы.
+};
+```
+Единственное решение: создать вспомогательный тип:
+```c++
+template<typename...> struct type_list {};
+template<typename .../*Ts*/> struct tail {};
+template<typename Head, typename ...Tail>
+struct tail<Head, Tail...> {
+    using type = type_list<Tail...>;
+};
+template<typename ...Ts> using tail_t = typename tail<Ts...>::type;
+```
+Но это сложно использовать:
+```c++
+template<typename> struct type_list_to_tuple {};
+template<typename ...Ts> struct type_list_to_tuple<type_list<Ts...>> {
+    using type = tuple<Ts...>;
+};
+typename type_list_to_tuple<tail_t<int, string>>::type = tuple<string>
+```
+
+---
+## 3.7.2. Общее решение для возвращата
+Попытка "в лоб": можно передать `tuple` как параметр:
+```c++
+// Заглушка
+template<template<typename...> typename /*F*/, typename /*TypeList*/>
+struct apply_type_list;
+// Реализация
+template<template<typename...> typename F, typename ...Ts>
+struct apply_type_list<F, type_list<Ts>> {
+    using type = F<Ts...>;
+};
+typename apply_type_list<tuple, type_list<int, string>>::type == tuple<int, string>
+```
+
+Что-то похожее [уже сделано в Boost.Hana](https://stackoverflow.com/a/38009838/767632).
+Только там синтаксис другой, лучше начать с мануала.

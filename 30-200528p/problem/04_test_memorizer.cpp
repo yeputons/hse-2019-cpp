@@ -65,6 +65,19 @@ TEST_CASE("Memorizer<Fn, C> remembers calls") {
         CHECK(arg1 == 200);
     }
 }
+
+TEST_CASE("Memorizer<Fn, C> does not call function twice") {
+    int calls = 0;
+    struct Fn {
+        int &calls;
+        int operator()() { calls++; return 0; }
+    } fn{calls};
+    REQUIRE(calls == 0);
+    cls_30::Memorizer<Fn, cls_30::CallLog<int>> mem(fn);
+    CHECK(calls == 0);
+    mem();
+    CHECK(calls == 1);
+}
 #endif  // TEST_MEMORIZER_02_MEMORIZER_SPECIFIED
 
 #ifdef TEST_MEMORIZER_03_MEMORIZER_COPIES_ARGS

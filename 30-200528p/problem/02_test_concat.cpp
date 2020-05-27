@@ -4,10 +4,10 @@
 #include "doctest.h"
 #include <iostream>
 
-#define TEST_CONCAT_01_SINGLE
-#define TEST_CONCAT_02_MULTIPLE
-#define TEST_CONCAT_03_CUSTOM_OPERATOR
-#define TEST_CONCAT_04_NONMOVABLE
+//#define TEST_CONCAT_01_SINGLE
+//#define TEST_CONCAT_02_MULTIPLE
+//#define TEST_CONCAT_03_CUSTOM_OPERATOR
+//#define TEST_CONCAT_04_NONMOVABLE
 
 #ifdef TEST_CONCAT_01_SINGLE
 TEST_CASE("concat formats a single value") {

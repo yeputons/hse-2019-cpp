@@ -5,10 +5,7 @@
 #include <utility>
 
 namespace cls_30 {
-template<typename T, typename ...Args>
-auto make_unique(Args &&...args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
+// TODO: make_unique<T>(....) { return std::unique_ptr(new T(....)); }
 }  // namespace cls_30
 
 #endif  // MAKE_UNIQUE_H

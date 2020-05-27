@@ -5,12 +5,7 @@
 #include <string>
 
 namespace cls_30 {
-template<typename ...Args>
-std::string concat(const Args &...args) {
-    std::stringstream s;
-    (s << ... << args);
-    return s.str();
-}
+// TODO: std::string concat(.....) { std::stringstream .... }
 }  // namespace cls_30
 
 #endif  // CONCAT_H

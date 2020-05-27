@@ -7,9 +7,9 @@
 #include <tuple>
 #include <type_traits>
 
-#define TEST_ZIP_01_EMPTY
-#define TEST_ZIP_02_NON_EMPTY
-#define TEST_ZIP_03_NON_ZIPPABLE_SFINAE
+//#define TEST_ZIP_01_EMPTY
+//#define TEST_ZIP_02_NON_EMPTY
+//#define TEST_ZIP_03_NON_ZIPPABLE_SFINAE
 
 namespace {
 auto is_zippable = boost::hana::is_valid(

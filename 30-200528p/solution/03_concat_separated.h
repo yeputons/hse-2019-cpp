@@ -8,6 +8,7 @@
 #include <utility>
 
 namespace cls_30 {
+#if 1  // Recursive solution (C++11)
 namespace impl {
 void append_separated(bool, std::stringstream &, std::string_view) {
 }
@@ -26,6 +27,20 @@ std::string concat_separated(std::string_view sep, const Args &...args) {
     impl::append_separated(/*first=*/true, s, sep, args...);
     return s.str();
 }
+#else  // Fold expression solution (C++17)
+template<typename ...Args>
+std::string concat_separated(std::string_view sep, const Args &...args) {
+    std::stringstream s;
+    bool first = true;
+    auto print = [&](const auto &arg) {
+        if (!first) s << sep;
+        first = false;
+        s << arg;
+    };
+    (print(args), ...);
+    return s.str();
+}
+#endif
 
 template<typename ...Args>
 std::string concat_separated(std::string_view sep, const std::tuple<Args...> &t) {

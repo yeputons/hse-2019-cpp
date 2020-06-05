@@ -57,7 +57,7 @@
 * `using` можно использовать жутким образом:
   ```
   struct Foo {
-  private:
+  protected:
       void magic();
   };
   struct Bar : Foo {

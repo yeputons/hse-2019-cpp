@@ -813,12 +813,12 @@ namespace ns {
 После (только пробелы надо нормальные):
 ```c++
 namespace ns {
-    namespace no_adl { struct Foo { .... }; struct Bar { .... };   }
-                       using no_adl::Foo;   using no_adl::Bar;
+    namespace no_adl  { struct Foo { .... }; struct Bar { .... };   }
+                        using no_adl::Foo;   using no_adl::Bar;
     void func1(....);
     void func2(....);
-    struct baz_adl { struct Baz { .... }; void func_baz(Baz);      }
-                     using baz_adl::Baz;  using baz_adl::func_baz;
+    namespace baz_adl { struct Baz { .... }; void func_baz(Baz);      }
+                        using baz_adl::Baz;  using baz_adl::func_baz;
 }
 ```
 

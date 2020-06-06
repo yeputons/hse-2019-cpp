@@ -10,3 +10,35 @@
 
 # Шаблоны
 Про параметры по умолчанию и несколько параметров рассказать сразу.
+
+# Простой способ нарушить базовую гарантию
+```
+struct MyString {
+    char *data;
+    MyString(const MyString &other)
+        : data(new char[std::strlen(other.data) + 1]) {
+        std::strcpy(data, other.data);
+    }
+    ~MyString() {
+        delete[] data;
+    }
+    MyString& operator=(const MyString &other) {
+        if (this == &other) return *this;  // Если не напишем, то будет UB ниже.
+        delete[] data;
+        data = nullptr;  // Для аккуратности.
+        data = new char[std::strlen(other.data) + 1];
+        std::strcpy(data, other.data);
+        return *this;
+    }
+};
+```
+
+1. Тут есть инвариант "`data != nullptr`": `strcpy`/`strlen` не работают с `nullptr`,
+   выдают UB.
+   `delete[] nullptr` при этом окей.
+2. Этот инвариант может нарушиться в `operator=`, если `new char[]` кинул.
+   Тогда деструктор ещё можно вызвать, а вот скопировать эту строчку в другую — UB.
+   Ну то есть можно ещё сказать, что это базовая гарантия и такое "невалидное" состояние,
+   конечно...
+3. А если бы `data = nullptr` не написали, то был бы UB прям сразу, даже деструктор не вызвать.
+   Это 100% нарушение базовой гарантии, без каких-то оговорок.
